@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clipvault"
+version = "0.1.0"
+description = "A lightweight, offline-first clipboard manager for Windows"
+readme = "README_EN.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = ["PySide6>=6.8,<7", "Pygments>=2.18,<3"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "pytest-qt>=4.4,<5", "ruff>=0.9,<1", "pyinstaller>=6.11,<7"]
+
+[project.gui-scripts]
+clipvault = "clipvault.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+clipvault = ["resources/*.svg", "resources/*.ico"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+qt_api = "pyside6"
+markers = ["windows: Windows native integration tests", "desktop: requires an interactive Windows desktop"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/clipvault/ui/styles.py" = ["E501"]
+"src/clipvault/ui/icons.py" = ["E501"]

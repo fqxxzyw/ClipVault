@@ -1,0 +1,191 @@
+import sys
+from dataclasses import replace
+
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QFormLayout,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
+
+from clipvault.ui.icons import icon
+from clipvault.utils.settings import Settings
+
+
+class SettingsPage(QWidget):
+    save_requested = Signal(object)
+    clear_requested = Signal()
+    open_data_requested = Signal()
+
+    def __init__(self, settings: Settings, parent=None):
+        super().__init__(parent)
+        self.current = settings
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(0, 0, 12, 0)
+        layout.setSpacing(18)
+
+        self.theme = QComboBox()
+        self.theme.addItem("Dark", "dark")
+        self.theme.addItem("Light", "light")
+        self.font_size = QSpinBox()
+        self.font_size.setRange(11, 20)
+        self.font_size.setSuffix(" px")
+        self.opacity = QSpinBox()
+        self.opacity.setRange(65, 100)
+        self.opacity.setSuffix(" %")
+        self.notifications = QCheckBox("Show a tray notification after copying")
+        self.auto_hide = QCheckBox("Hide quick panel when it loses focus")
+        appearance = self._section(
+            "Appearance",
+            [
+                ("Theme", self.theme),
+                ("Font size", self.font_size),
+                ("Window opacity", self.opacity),
+                ("", self.notifications),
+                ("", self.auto_hide),
+            ],
+        )
+        layout.addWidget(appearance)
+
+        self.hotkey = QLineEdit()
+        self.hotkey.setPlaceholderText("Ctrl+Shift+V")
+        self.hotkey.setMaxLength(80)
+        self.hotkey.setToolTip("Ctrl / Alt / Shift / Win + A–Z, 0–9, F1–F11 or navigation key")
+        self.startup = QCheckBox("Start in the system tray when Windows starts")
+        if sys.platform != "win32":
+            self.startup.setEnabled(False)
+            self.startup.setToolTip("Available on Windows only")
+        self.quit_on_close = QCheckBox("Exit the app when the window is closed")
+        layout.addWidget(
+            self._section(
+                "Shortcuts & startup",
+                [
+                    ("Global shortcut", self.hotkey),
+                    ("", self.startup),
+                    ("", self.quit_on_close),
+                ],
+            )
+        )
+
+        self.max_history = QSpinBox()
+        self.max_history.setRange(100, 100_000)
+        self.max_history.setSingleStep(100)
+        self.retention = QComboBox()
+        for days in (0, 7, 30, 90):
+            self.retention.addItem("Never" if days == 0 else f"{days} days", days)
+        self.sensitive = QCheckBox("Skip recognizable passwords, private keys and API tokens")
+        layout.addWidget(
+            self._section(
+                "Privacy & history",
+                [
+                    ("Ordinary clip limit", self.max_history),
+                    ("Auto cleanup", self.retention),
+                    ("", self.sensitive),
+                ],
+            )
+        )
+        hint = QLabel(
+            "Favorites and pinned clips survive cleanup and Clear history.\n"
+            "Secret detection is a heuristic. Pause recording before copying secrets.\n"
+            "Data stays on this device. SQLite storage is not encrypted."
+        )
+        hint.setObjectName("muted")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+        actions = QHBoxLayout()
+        folder = QPushButton("Open data folder")
+        folder.setIcon(icon("folder"))
+        folder.clicked.connect(self.open_data_requested)
+        self.clear = QPushButton("Clear ordinary history…")
+        self.clear.setObjectName("danger")
+        self.clear.setIcon(icon("trash", "#ff919e"))
+        self.clear.clicked.connect(self.clear_requested)
+        actions.addWidget(folder)
+        actions.addWidget(self.clear)
+        actions.addStretch()
+        layout.addLayout(actions)
+        layout.addStretch()
+        scroll.setWidget(panel)
+        outer.addWidget(scroll)
+        footer = QHBoxLayout()
+        reset = QPushButton("Reset form")
+        reset.clicked.connect(
+            lambda: self.populate(replace(Settings(), paused=self.current.paused))
+        )
+        self.save = QPushButton("Save settings")
+        self.save.setObjectName("primary")
+        self.save.setIcon(icon("check", "#101522"))
+        self.save.clicked.connect(self._save)
+        footer.addWidget(reset)
+        footer.addStretch()
+        footer.addWidget(self.save)
+        outer.addLayout(footer)
+        self.populate(settings)
+
+    def _section(self, title: str, rows: list) -> QFrame:
+        frame = QFrame()
+        frame.setObjectName("privacyCard")
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(17, 15, 17, 16)
+        label = QLabel(title)
+        label.setObjectName("sectionTitle")
+        layout.addWidget(label)
+        form = QFormLayout()
+        form.setHorizontalSpacing(25)
+        form.setVerticalSpacing(12)
+        for text, widget in rows:
+            if text:
+                form.addRow(text, widget)
+            else:
+                form.addRow(widget)
+        layout.addLayout(form)
+        return frame
+
+    def populate(self, settings: Settings):
+        self.current = settings
+        self.theme.setCurrentIndex(self.theme.findData(settings.theme))
+        self.font_size.setValue(settings.font_size)
+        self.opacity.setValue(settings.opacity)
+        self.hotkey.setText(settings.hotkey)
+        self.max_history.setValue(settings.max_history)
+        self.retention.setCurrentIndex(self.retention.findData(settings.retention_days))
+        for checkbox, value in (
+            (self.notifications, settings.copy_notification),
+            (self.auto_hide, settings.auto_hide),
+            (self.startup, settings.start_at_login),
+            (self.quit_on_close, settings.quit_on_close),
+            (self.sensitive, settings.sensitive_filter),
+        ):
+            checkbox.setChecked(value)
+
+    def _save(self):
+        self.save_requested.emit(
+            replace(
+                self.current,
+                theme=self.theme.currentData(),
+                font_size=self.font_size.value(),
+                opacity=self.opacity.value(),
+                hotkey=self.hotkey.text().strip(),
+                max_history=self.max_history.value(),
+                retention_days=self.retention.currentData(),
+                sensitive_filter=self.sensitive.isChecked(),
+                copy_notification=self.notifications.isChecked(),
+                auto_hide=self.auto_hide.isChecked(),
+                start_at_login=self.startup.isChecked(),
+                quit_on_close=self.quit_on_close.isChecked(),
+            )
+        )
