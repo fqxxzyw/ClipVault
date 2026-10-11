@@ -1,4 +1,5 @@
 from dataclasses import replace
+from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QDesktopServices
@@ -108,7 +109,7 @@ def test_open_data_folder_action_is_local(qapp, qtbot, tmp_path, monkeypatch):
         monkeypatch.setattr(QDesktopServices, "openUrl", lambda url: urls.append(url) or True)
         c.open_data_folder()
         assert len(urls) == 1 and urls[0].isLocalFile()
-        assert urls[0].toLocalFile() == str(tmp_path)
+        assert Path(urls[0].toLocalFile()) == tmp_path
     finally:
         c.shutdown()
         c.window.deleteLater()

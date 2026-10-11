@@ -1,4 +1,5 @@
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
@@ -147,8 +148,9 @@ def test_user_data_path_is_explicitly_isolated(tmp_path):
 
 
 def test_startup_command_quotes_paths():
-    command = startup_command("C:/Program Files/ClipVault/ClipVault.exe", frozen=True)
-    assert command.startswith('"C:/Program Files/')
+    executable = Path("C:/Program Files/ClipVault/ClipVault.exe")
+    command = startup_command(str(executable), frozen=True)
+    assert command.startswith(f'"{executable}" ')
     assert command.endswith("--background")
     assert "-m clipvault" in startup_command("C:/Python/python.exe", frozen=False)
     assert not is_web_url("file:///etc/passwd")
