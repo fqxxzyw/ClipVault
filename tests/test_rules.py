@@ -89,6 +89,7 @@ def test_normal_content_allowed(text):
         ("nul\x00text", "invalid_text"),
         ("a" * (MAX_TEXT_LENGTH + 1), "too_long"),
     ],
+    ids=["blank", "not-text", "invalid-surrogate", "nul", "too-long"],
 )
 def test_capture_validation(text, reason):
     assert validate_capture(text).reason == reason
