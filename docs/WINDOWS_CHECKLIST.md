@@ -1,6 +1,6 @@
 # Windows 真实桌面验收
 
-本交付运行环境为 Linux。下表所有 Windows 项目当前均为 **未执行**。
+本机运行环境为 Linux。远程 Windows Server 2025 CI 的 onedir 构建和隔离启动检查已通过；下表其余 Windows 10/11 真实桌面项目均为 **未执行**。
 
 先用公开样例测试，避免包含真实密码、Token、私钥或个人数据。使用独立数据目录；测试脚本会改变真实剪贴板并尝试恢复原格式，复制未保存的内容前请先保留副本。测试过程中暂停其他 ClipVault 实例，避免样例进入日常历史。
 
@@ -49,7 +49,7 @@ Remove-Item Env:QT_QPA_PLATFORM
 | 快速显隐 | 快速重复呼出/隐藏 30 次，无重复窗口、崩溃或资源泄漏 | 未执行 |
 | 干净退出 | 托盘退出后进程消失，快捷键可被重新注册，SQLite 可以再次打开 | 未执行 |
 | CPU | 空闲 5 分钟查看任务管理器，没有持续高 CPU；记录实际观测值 | 未执行 |
-| 打包构建 | `scripts/build.py` 生成完整 onedir，`scripts/smoke_bundle.py` 通过 | 未执行 |
+| 打包构建 | `scripts/build.py` 生成完整 onedir，`scripts/smoke_bundle.py` 通过 | Windows Server 2025 CI 通过；Windows 10/11 本机待验 |
 | 打包运行 | 普通用户运行 EXE，无控制台、图标显示、无 Python 环境可运行且主要功能正常 | 未执行 |
 | 非联网 | 核心使用期间检查没有网络请求；主动浏览器打开动作单独记录 | 未执行 |
 

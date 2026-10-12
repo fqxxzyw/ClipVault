@@ -1,6 +1,6 @@
 # ClipVault 0.1.0 验证与交付记录
 
-验证日期：2026-10-11。项目根目录为 `clipvault/`。源码包内含完整项目、双语 README、MIT License、测试、真实截图、Windows 构建脚本和 GitHub Actions。
+本机验证日期：2026-10-11；GitHub CI 验证日期：2026-10-12。项目根目录为 `clipvault/`。源码内含完整项目、双语 README、MIT License、测试、真实截图、Windows 构建脚本和 GitHub Actions。
 
 ## 结论
 
@@ -8,7 +8,9 @@
 
 PySide6 主窗口已实际启动，深色、浅色及设置页截图来自运行中的 Qt 程序。源码启动检查验证窗口、数据库、SVG/ICO 资源及 Pygments 预览。Linux onedir 构建已完成；该产物的离屏启动、数据库初始化、代码高亮及干净退出检查结果列于下方。
 
-**本环境不是 Windows。没有生成或验证 Windows EXE，也没有把 Windows 原生剪贴板、物理快捷键、真实系统托盘、开机启动、多显示器项目标记为通过。GitHub Actions 工作流仅已配置，尚未在远程仓库执行。**
+**本机环境不是 Windows。远程 GitHub Actions 已在 Windows Server 2025 x64 / Python 3.11.9 上构建 EXE，并通过隔离 offscreen 启动、图标、数据库、高亮及退出检查。真实 Windows 10/11 剪贴板、物理快捷键、系统托盘、开机启动和多显示器仍未标记为通过。**
+
+最终构建源提交：`4945479301646278c185c49d3d804d7bc0f12da7`。[实际 CI 运行](https://github.com/fqxxzyw/ClipVault/actions/runs/38194979657) 的三个任务全部成功：Linux Python 3.11 为 90 passed / 3 skipped，Linux 3.12 为 90 passed / 3 skipped；Windows 3.11 为 89 passed / 4 skipped。Windows 多跳过一项仅用于 Linux 的禁止交叉编译检查；三个真实桌面测试仍按条件跳过。
 
 ## 实际环境
 
@@ -49,8 +51,10 @@ python scripts/smoke_bundle.py
 | Qt 实际截图 | 深色、浅色、设置页各 1 张；公开示例和临时数据库 |
 | Linux PyInstaller onedir | 成功，原生 Linux 可执行文件；不是 Windows EXE |
 | Linux 打包后离屏启动检查 | 通过；窗口、图标、SQLite、Pygments 和正常退出 |
-| Windows onedir/onefile | 未执行 |
-| 远程 CI | 未执行 |
+| Windows onedir | Windows Server 2025 CI 构建成功；打包后隔离启动检查成功 |
+| Windows onefile | 未执行 |
+| 远程 CI | Linux 3.11 / 3.12 和 Windows 构建三个任务均通过；见上方实际运行链接 |
+| Windows ZIP 检查 | SHA-256 与 CI artifact 一致、ZIP CRC 通过；x64 PE / GUI 子系统、Qt Windows 插件、图标和许可证齐全；不包含用户数据库或设置 |
 
 测试用时只描述本次运行，不是性能基准或产品延迟承诺。XML 原始结果生成于临时检查目录，测试数据没有混入真实用户目录或源码包。
 
@@ -90,7 +94,7 @@ Linux 打包日志提示本环境缺少 `libxcb-cursor.so.0`；本次使用 offs
 
 本次本机验证产物位置：`dist/ClipVault/ClipVault`，为 **Linux ELF**。它是构建检查结果，未放进 Windows 源码交付包。
 
-在 Windows 执行 `scripts/build_windows.ps1` 或 `python scripts/build.py` 后，目标位置是 **`dist/ClipVault/ClipVault.exe`**（并带完整依赖目录）。可选 onefile 目标为 `dist/ClipVault.exe`；两者在本次环境均未生成。
+Windows CI 产物为 **`dist/ClipVault/ClipVault.exe`**（带完整依赖和许可证目录），已上传为 `ClipVault-windows-x64-onedir` artifact。发布 ZIP 为 `ClipVault-0.1.0-preview.1-windows-x64.zip`，包含 236 个文件；大小 54,326,240 字节，SHA-256 为 `a8d8ac528e857e339144422c8356815528295af5ffbc2713af6767eb7326c89d`。可选 onefile 目标 `dist/ClipVault.exe` 未构建。
 
 交付包的项目结构和关键入口：
 
@@ -107,11 +111,11 @@ Linux 打包日志提示本环境缺少 `libxcb-cursor.so.0`；本次使用 offs
 | `docs/WINDOWS_CHECKLIST.md` | 未执行的 Windows 项目验收表 |
 | `LICENSE`, `THIRD_PARTY_NOTICES.md` | MIT 与第三方依赖许可证说明 |
 
-公开 GitHub 仓库为 [fqxxzyw/ClipVault](https://github.com/fqxxzyw/ClipVault)，远程构建状态见 Actions。上述结果为本机验证记录；Windows 桌面未验证项仍然保留。源码 ZIP 不含 Git 元数据、用户数据库、设置、虚拟环境、缓存或测试数据库；从 ZIP 解压后可重新 `git init`。
+公开 GitHub 仓库为 [fqxxzyw/ClipVault](https://github.com/fqxxzyw/ClipVault)，远程构建状态见 Actions。本机与远程 CI 验证已分别注明；Windows 桌面未验证项仍然保留。源码 ZIP 不含 Git 元数据、用户数据库、设置、虚拟环境、缓存或测试数据库；从 ZIP 解压后可重新 `git init`。
 
 ## 已知问题和边界
 
-- Windows 行为与二进制构建需要实机验证，详见上表与验收单。
+- Windows 二进制已构建并完成隔离启动检查；Windows 10/11 桌面行为仍须实机验证，详见上表与验收单。
 - SQLite 无加密；敏感检测会漏判/误判，删除不保证 SSD/备份安全擦除。
 - 仅文本，超出 100,000 字符不保存；高亮只预览前 20,000 字符；不自动粘贴到其他程序。
 - 中文/短词 LIKE 扫描随数据规模增长；大量长文本或收藏可能降低搜索速度。

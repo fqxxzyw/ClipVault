@@ -2,6 +2,8 @@
 
 公开源码仓库：[fqxxzyw/ClipVault](https://github.com/fqxxzyw/ClipVault)，于 2026-10-11 创建。Windows 桌面验收尚未完成；二进制正式发布前按以下步骤验证。远程构建状态以 [Actions](https://github.com/fqxxzyw/ClipVault/actions) 实际运行记录为准。
 
+当前预览发布：`v0.1.0-preview.1`，完整 Windows x64 ZIP 和 SHA-256 文件见 [Releases](https://github.com/fqxxzyw/ClipVault/releases)。CI 构建及隔离启动检查通过，真实 Windows 桌面验收仍待完成；预览版标记为 Pre-release。不要将它描述为已经完成 Windows 10/11 实机认证。
+
 1. 在 Windows 10/11 桌面按 `WINDOWS_CHECKLIST.md` 实测并记录结果。
 2. 运行 Ruff、pytest、`scripts/build.py`、`scripts/smoke_bundle.py`，再实际运行打包软件。
 3. 检查不含真实数据库、配置、缓存、密钥、个人信息；本项目的 `.gitignore` 已排除这些文件。

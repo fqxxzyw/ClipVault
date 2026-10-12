@@ -10,7 +10,7 @@ Your Clipboard. Your Data. Your Control.
 - **快捷搜索，快速复用**：多关键词和中文子串搜索、收藏、置顶、代码高亮。
 - **轻量简洁，开箱即用**：原生 Qt 桌面界面，托盘常驻，Windows 全局快捷键。
 
-> 当前版本 0.1.0。源码已在 Linux + Qt offscreen 环境运行和测试；Windows EXE、真实 Windows 剪贴板、物理快捷键、多显示器和系统托盘尚需 Windows 实测。请勿将提供的构建流程视为已完成的 Windows 发布认证。详细结果见验证报告。
+> 当前公开预览版：0.1.0 Preview 1。[下载 Windows x64 完整包](https://github.com/fqxxzyw/ClipVault/releases)。Linux 两组 CI 各 90 项通过；Windows CI 89 项通过，EXE 构建及隔离启动检查通过。真实 Windows 10/11 桌面的剪贴板、物理快捷键、多显示器、托盘和开机启动尚需实测；预览版不代表桌面验收完成。详细结果见验证报告。
 
 ## 软件截图
 
@@ -72,7 +72,9 @@ Linux 可用 `python -m clipvault` 检查桌面界面；全局快捷键与开机
 
 ### 已构建版本
 
-本交付**不包含已验证的 Windows EXE**。在 Windows 上构建，或将源码推送到自己的 GitHub 仓库，等待 Actions 成功后下载 `ClipVault-windows-x64-onedir` artifact。解压完整目录后运行 `ClipVault.exe`，不要仅拷贝 EXE；它需要旁边的 `_internal` 目录。
+在 [Releases](https://github.com/fqxxzyw/ClipVault/releases) 下载 `ClipVault-0.1.0-preview.1-windows-x64.zip` 和同名 `.sha256` 文件。将 ZIP **完整解压到一个单独目录**，再运行 `ClipVault.exe`；无需安装 Python。保留 `_internal`、`licenses` 和许可证文件，不要只拷贝 EXE。此包由 Windows Actions 构建并通过 offscreen 启动检查，真实桌面验收待完成。
+
+Windows PowerShell 可用 `Get-FileHash .\ClipVault-0.1.0-preview.1-windows-x64.zip -Algorithm SHA256` 与校验文件核对。开发构建仍可从 Actions 下载 `ClipVault-windows-x64-onedir` artifact。
 
 ## 使用方式和快捷键
 
@@ -172,7 +174,7 @@ SQLite 启用 WAL、2.5 秒 `busy_timeout`，数据库繁忙时后台有限重�
 
 ## 已知限制
 
-- 本交付环境不是 Windows；原生监听、快捷键、托盘、开机启动、多显示器与 Windows 打包待实测。
+- Windows EXE 已在 Windows Server 2025 CI 构建并通过隔离启动检查；Windows 10/11 的原生监听、快捷键、托盘、开机启动和多显示器仍待真实桌面实测。
 - Windows 10/11 是目标平台，不代表所有系统版本和 DPI 组合均已验证。
 - 仅文本；不是密码库，无加密、自动粘贴、图片/文件历史或跨设备同步。
 - 超长文本整条跳过，代码识别是保守启发式，JSON 解析/格式化不保留原有空格。

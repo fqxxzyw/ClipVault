@@ -10,7 +10,7 @@ A lightweight, privacy-first clipboard manager for Windows.
 - **Find and reuse:** instant keyboard access, multi-term and Chinese substring search, favorites, pins and syntax highlighting.
 - **Simple desktop workflow:** PySide6 interface, dark/light themes, tray controls and Windows native hotkeys.
 
-> Version 0.1.0 has been exercised on Linux with Qt's offscreen platform. A Windows executable and real Windows clipboard, keyboard, tray, startup and multi-monitor behavior have not been verified in this delivery. A configured build is not a certified Windows release; see the validation report.
+> Public preview: 0.1.0 Preview 1. [Download the complete Windows x64 bundle](https://github.com/fqxxzyw/ClipVault/releases). Both Linux CI jobs passed 90 tests; Windows CI passed 89 tests, built the EXE and passed isolated startup checks. Real Windows 10/11 clipboard, physical keyboard, tray, startup and multi-monitor behavior still require desktop verification. See the validation report.
 
 ## Actual application screenshots
 
@@ -54,7 +54,9 @@ Use your installed Python version if 3.11 is unavailable. Install `-e .` without
 
 Default data: `%LOCALAPPDATA%\ClipVault\history.sqlite3` and `settings.json`, outside the source tree. Use Settings → Open data folder. An explicit `--data-dir` allows an isolated development profile. Linux uses `$XDG_DATA_HOME/ClipVault` or `~/.local/share/ClipVault`; native global hotkeys and startup integration are Windows-only.
 
-There is **no verified Windows EXE in this delivery**. Build on Windows or push to your own repository and download the successful Actions artifact `ClipVault-windows-x64-onedir`. Extract the entire folder, including `_internal`, before launching `ClipVault.exe`.
+Download `ClipVault-0.1.0-preview.1-windows-x64.zip` and its `.sha256` file from [Releases](https://github.com/fqxxzyw/ClipVault/releases). **Extract the entire ZIP into a separate folder** before launching `ClipVault.exe`; Python installation is not required. Keep `_internal`, `licenses` and all notices. The Windows CI build passed an offscreen startup check; interactive Windows 10/11 verification remains pending.
+
+Compare `Get-FileHash .\ClipVault-0.1.0-preview.1-windows-x64.zip -Algorithm SHA256` with the checksum file. Development builds are also available as Actions artifact `ClipVault-windows-x64-onedir`.
 
 ## Use and shortcuts
 
@@ -142,7 +144,7 @@ Actual screenshots can be regenerated with `python scripts/capture_screenshots.p
 
 ## Known limitations
 
-- Windows native behavior and Windows packaging remain unverified in this Linux delivery; OS versions and DPI combinations require desktop testing.
+- The EXE was built and smoke-tested on Windows Server 2025 CI. Native Windows 10/11 clipboard, hotkey, tray, startup and multi-monitor behavior still require interactive desktop testing.
 - Text only, no encryption, auto-paste, image history or synchronization.
 - Heuristics do not fully parse every language or find every secret; JSON formatting replaces whitespace.
 - OS notifications may coalesce extremely rapid changes; locked clipboard retries read the newest available state. Capturing every overwritten intermediate state is not guaranteed.
