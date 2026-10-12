@@ -1,8 +1,11 @@
 """Native PyInstaller build. Windows by default; Linux check requires an explicit flag."""
 
 import argparse
+import json
+import shutil
 import subprocess
 import sys
+from importlib.metadata import distribution
 from pathlib import Path
 
 
@@ -55,6 +58,40 @@ def build_arguments(root: Path, *, onefile=False) -> list[str]:
     return arguments
 
 
+def copy_notices(root: Path, output: Path) -> None:
+    """Keep notices beside the EXE, including when building the optional onefile."""
+    for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+        shutil.copy2(root / name, output / name)
+    licenses = output / "licenses"
+    shutil.copytree(root / "packaging" / "licenses", licenses, dirs_exist_ok=True)
+    packages = {}
+    for name in ("PySide6", "PySide6_Essentials", "PySide6_Addons", "shiboken6", "Pygments"):
+        package = distribution(name)
+        destination = licenses / name
+        destination.mkdir(parents=True, exist_ok=True)
+        metadata = package.read_text("METADATA")
+        if metadata:
+            (destination / "METADATA").write_text(metadata, encoding="utf-8")
+        for item in package.files or ():
+            if any(word in item.name.lower() for word in ("license", "copying", "authors")):
+                source = Path(package.locate_file(item))
+                if source.is_file():
+                    shutil.copy2(source, destination / item.name)
+        packages[name] = package.version
+    python_license = Path(sys.base_prefix) / "LICENSE.txt"
+    if python_license.is_file():
+        shutil.copy2(python_license, licenses / "Python-LICENSE.txt")
+    elif sys.platform == "win32":
+        raise RuntimeError("Python runtime license was not found; refusing an incomplete bundle")
+    (licenses / "versions.json").write_text(
+        json.dumps({"Python": sys.version.split()[0], **packages}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    for required in ("LGPL-3.0.txt", "GPL-3.0.txt", "Pygments/LICENSE"):
+        if not (licenses / required).is_file():
+            raise RuntimeError("Required dependency license was not included")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build ClipVault for the current OS")
     parser.add_argument("--onefile", action="store_true", help="Experimental single executable")
@@ -71,6 +108,7 @@ def main():
         executable = executable.parent / "ClipVault" / executable.name
     if not executable.exists():
         raise RuntimeError("Packaged executable was not created")
+    copy_notices(root, executable.parent)
     print(f"Build output: {executable}")
     print("Run scripts/smoke_bundle.py to validate isolated-profile startup and exit.")
 

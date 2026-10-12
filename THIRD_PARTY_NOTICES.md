@@ -7,8 +7,18 @@ ClipVault's own source code and original code-drawn icons are MIT licensed.
 - **PyInstaller**: GPL with the upstream bootloader exception for packaged applications. Its license does not replace dependency obligations.
 - **pytest, pytest-qt, Ruff**: development tools retain their respective upstream licenses; they are not application runtime modules.
 
-The PyInstaller build uses its dependency hooks to collect upstream metadata and licenses. Before distributing an EXE, inspect the bundled third-party notices, obtain any license texts that a hook has omitted, and include them in the release. Source-build users can inspect licenses in the installed Python distributions. See the upstream projects for authoritative license terms:
+The build copies this notice and ClipVault's MIT license beside the executable. The `licenses/` directory contains LGPLv3/GPLv3 texts, installed runtime-package metadata and license files, Pygments' BSD notice, the Windows Python runtime license and exact dependency versions. Qt libraries are dynamically bundled; ClipVault does not modify them or restrict replacement of those libraries. Qt source and additional component notices are available from the upstream links below. Optional onefile builds also require the accompanying notices directory when redistributed.
+
+Source-build users can inspect the installed Python distributions. Third-party components retain their own licenses; the application's MIT license applies to ClipVault's source, not its dependencies. See upstream for source code and component notices corresponding to the versions recorded in `licenses/versions.json`:
 
 - https://doc.qt.io/qtforpython-6/licenses.html
+- https://code.qt.io/cgit/pyside/pyside-setup.git/
+- https://code.qt.io/cgit/qt/qtbase.git/
+- https://code.qt.io/cgit/qt/qtsvg.git/
+- https://doc.qt.io/qt-6/qtcore-attribution.html
+- https://doc.qt.io/qt-6/qtgui-attribution.html
+- https://doc.qt.io/qt-6/qtsvg-attribution.html
 - https://pygments.org/docs/license/
+- https://github.com/pygments/pygments
+- https://github.com/python/cpython
 - https://pyinstaller.org/en/stable/license.html
