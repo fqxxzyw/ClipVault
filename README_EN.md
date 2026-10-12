@@ -54,9 +54,9 @@ Use your installed Python version if 3.11 is unavailable. Install `-e .` without
 
 Default data: `%LOCALAPPDATA%\ClipVault\history.sqlite3` and `settings.json`, outside the source tree. Use Settings → Open data folder. An explicit `--data-dir` allows an isolated development profile. Linux uses `$XDG_DATA_HOME/ClipVault` or `~/.local/share/ClipVault`; native global hotkeys and startup integration are Windows-only.
 
-Download `ClipVault-0.1.0-preview.1-windows-x64.zip` and its `.sha256` file from [Releases](https://github.com/fqxxzyw/ClipVault/releases). **Extract the entire ZIP into a separate folder** before launching `ClipVault.exe`; Python installation is not required. Keep `_internal`, `licenses` and all notices. The Windows CI build passed an offscreen startup check; interactive Windows 10/11 verification remains pending.
+See [Releases](https://github.com/fqxxzyw/ClipVault/releases) for the preview and Windows download link, or download the [verified Windows onedir artifact](https://github.com/fqxxzyw/ClipVault/actions/runs/38194979657/artifacts/11722853005). GitHub requires sign-in to download Actions artifacts. **Extract the entire ZIP into a separate folder** before launching `ClipVault.exe`; Python installation is not required. Keep `_internal`, `licenses` and all notices. The Windows CI build passed an offscreen startup check; interactive Windows 10/11 verification remains pending.
 
-Compare `Get-FileHash .\ClipVault-0.1.0-preview.1-windows-x64.zip -Algorithm SHA256` with the checksum file. Development builds are also available as Actions artifact `ClipVault-windows-x64-onedir`.
+Compare the ZIP's SHA-256 with `a8d8ac528e857e339144422c8356815528295af5ffbc2713af6767eb7326c89d`. The ZIP is hosted as an Actions artifact and has not been attached to a Release; artifacts have retention limits. Build from source or rerun CI when an artifact expires.
 
 ## Use and shortcuts
 

@@ -72,9 +72,9 @@ Linux 可用 `python -m clipvault` 检查桌面界面；全局快捷键与开机
 
 ### 已构建版本
 
-在 [Releases](https://github.com/fqxxzyw/ClipVault/releases) 下载 `ClipVault-0.1.0-preview.1-windows-x64.zip` 和同名 `.sha256` 文件。将 ZIP **完整解压到一个单独目录**，再运行 `ClipVault.exe`；无需安装 Python。保留 `_internal`、`licenses` 和许可证文件，不要只拷贝 EXE。此包由 Windows Actions 构建并通过 offscreen 启动检查，真实桌面验收待完成。
+在 [Releases](https://github.com/fqxxzyw/ClipVault/releases) 查看预览版和 Windows 下载入口，或直接下载 [已验证的 Windows onedir artifact](https://github.com/fqxxzyw/ClipVault/actions/runs/38194979657/artifacts/11722853005)（GitHub 要求登录后下载 Actions 附件）。将 ZIP **完整解压到一个单独目录**，再运行 `ClipVault.exe`；无需安装 Python。保留 `_internal`、`licenses` 和许可证文件，不要只拷贝 EXE。此包由 Windows Actions 构建并通过 offscreen 启动检查，真实桌面验收待完成。
 
-Windows PowerShell 可用 `Get-FileHash .\ClipVault-0.1.0-preview.1-windows-x64.zip -Algorithm SHA256` 与校验文件核对。开发构建仍可从 Actions 下载 `ClipVault-windows-x64-onedir` artifact。
+Windows PowerShell 可用 `Get-FileHash .\下载的文件.zip -Algorithm SHA256` 核对校验值：`a8d8ac528e857e339144422c8356815528295af5ffbc2713af6767eb7326c89d`。当前 ZIP 存放于 Actions，尚未作为 Release 附件上传；Actions 产物有保留期限，可用源码构建或重新运行 CI。
 
 ## 使用方式和快捷键
 

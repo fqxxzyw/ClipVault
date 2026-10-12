@@ -2,7 +2,9 @@
 
 **下载与运行**
 
-下载 `ClipVault-0.1.0-preview.1-windows-x64.zip` 和同名 `.sha256` 文件，将 ZIP 完整解压到一个单独目录，再运行 `ClipVault.exe`。无需安装 Python。保留 `_internal`、`licenses` 和许可证文件。
+[下载已验证的 Windows x64 ZIP](https://github.com/fqxxzyw/ClipVault/actions/runs/38194979657/artifacts/11722853005)（GitHub Actions 附件，需登录 GitHub）。此 ZIP 尚未上传为 Release 附件；Actions 产物有保留期限。将 ZIP 完整解压到一个单独目录，再运行 `ClipVault.exe`。无需安装 Python。保留 `_internal`、`licenses` 和许可证文件。
+
+ZIP SHA-256：`a8d8ac528e857e339144422c8356815528295af5ffbc2713af6767eb7326c89d`。可以用 PowerShell `Get-FileHash` 核对。
 
 数据默认保存在当前用户 `%LOCALAPPDATA%\ClipVault`，不写入软件目录，不上传服务器。
 
@@ -31,4 +33,4 @@
 
 **English**
 
-A lightweight, offline-first clipboard manager for Windows. Extract the complete x64 ZIP before running `ClipVault.exe`; Python is not required. Keep all dependency and license folders. The Windows CI build passed tests and an isolated offscreen startup check. Interactive Windows 10/11 clipboard, keyboard, tray, startup and multi-monitor verification remains pending; this is a preview release.
+A lightweight, offline-first clipboard manager for Windows. Download the verified x64 ZIP from the Actions artifact linked above (GitHub sign-in required); it is not a Release attachment. Extract the complete ZIP before running `ClipVault.exe`; Python is not required. Keep all dependency and license folders. The Windows CI build passed tests and an isolated offscreen startup check. Interactive Windows 10/11 clipboard, keyboard, tray, startup and multi-monitor verification remains pending; this is a preview release.

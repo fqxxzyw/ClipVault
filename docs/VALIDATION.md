@@ -94,7 +94,7 @@ Linux 打包日志提示本环境缺少 `libxcb-cursor.so.0`；本次使用 offs
 
 本次本机验证产物位置：`dist/ClipVault/ClipVault`，为 **Linux ELF**。它是构建检查结果，未放进 Windows 源码交付包。
 
-Windows CI 产物为 **`dist/ClipVault/ClipVault.exe`**（带完整依赖和许可证目录），已上传为 `ClipVault-windows-x64-onedir` artifact。发布 ZIP 为 `ClipVault-0.1.0-preview.1-windows-x64.zip`，包含 236 个文件；大小 54,326,240 字节，SHA-256 为 `a8d8ac528e857e339144422c8356815528295af5ffbc2713af6767eb7326c89d`。可选 onefile 目标 `dist/ClipVault.exe` 未构建。
+Windows CI 产物为 **`dist/ClipVault/ClipVault.exe`**（带完整依赖和许可证目录），已上传为 `ClipVault-windows-x64-onedir` artifact。下载校验的本地副本命名为 `ClipVault-0.1.0-preview.1-windows-x64.zip`，包含 236 个文件；大小 54,326,240 字节，SHA-256 为 `a8d8ac528e857e339144422c8356815528295af5ffbc2713af6767eb7326c89d`。当前公开下载位置是 Actions artifact，尚未上传 Release 附件。可选 onefile 目标 `dist/ClipVault.exe` 未构建。
 
 交付包的项目结构和关键入口：
 
