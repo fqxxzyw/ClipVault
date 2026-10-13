@@ -6,7 +6,7 @@
 
 界面更新圆角、Segoe UI Variable 字体优先、Windows 11 DWM 深色标题栏/系统圆角与 Mica/Acrylic 请求；页面 220ms 滑动+渐显，玻璃指针高光可中断，并遵循减少动效。
 
-下载：[Windows x64 完整 ZIP](https://github.com/fqxxzyw/ClipVault/actions/runs/38357562691/artifacts/11793796402)（需要登录 GitHub，Actions 产物有效至 2027-01-11；二进制未附加到 Release）。完整解压后运行 `ClipVault.exe`，保留 `_internal` 与许可证目录。
+下载：[Windows x64 完整 ZIP](https://github.com/fqxxzyw/ClipVault/releases/download/v0.3.0-preview.1/ClipVault-0.3.0-preview.1-windows-x64.zip)（已上传至 Release Assets，可公开下载）。完整解压后运行 `ClipVault.exe`，保留 `_internal` 与许可证目录。
 
 SHA-256：`98c3d617681abd8190e8e69ed16b447b059b86551eb2ed71280bb6f2d3f84e59`。
 

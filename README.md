@@ -72,7 +72,7 @@ py -3.11 -m venv .venv
 
 只运行软件可安装 `-e .`，无需开发依赖。默认数据位于 `%LOCALAPPDATA%\ClipVault\history.sqlite3` 与 `settings.json`，不在项目目录。图片也在 SQLite 中。设置里可打开数据目录；开发测试可用 `--data-dir` 指定隔离目录。Linux 数据目录为 `$XDG_DATA_HOME/ClipVault` 或 `~/.local/share/ClipVault`；全局快捷键和开机启动仅 Windows 提供。
 
-下载已验证的 [Windows x64 完整 ZIP](https://github.com/fqxxzyw/ClipVault/actions/runs/38357562691/artifacts/11793796402) 需要登录 GitHub；**完整解压 ZIP 后运行 ClipVault.exe**，保留 `_internal`、`licenses` 与所有声明，不需要安装 Python。Actions 产物有保留期限，过期后从源码构建或重新运行 CI。此版本 ZIP 的 SHA-256：`98c3d617681abd8190e8e69ed16b447b059b86551eb2ed71280bb6f2d3f84e59`。二进制未上传为 Release 附件，发布页提供下载入口。
+从 Release 下载已验证的 [Windows x64 完整 ZIP](https://github.com/fqxxzyw/ClipVault/releases/download/v0.3.0-preview.1/ClipVault-0.3.0-preview.1-windows-x64.zip)，无需登录 GitHub；**完整解压 ZIP 后运行 ClipVault.exe**，保留 `_internal`、`licenses` 与所有声明，不需要安装 Python。完整包保存在 Release Assets。此版本 ZIP 的 SHA-256：`98c3d617681abd8190e8e69ed16b447b059b86551eb2ed71280bb6f2d3f84e59`。二进制已上传为 Release 附件。
 
 ## 限制与隐私
 

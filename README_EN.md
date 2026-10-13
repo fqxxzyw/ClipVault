@@ -73,7 +73,7 @@ py -3.11 -m venv .venv
 
 Runtime-only installation: `pip install -e .`. User data: `%LOCALAPPDATA%\ClipVault\history.sqlite3` and `settings.json`, outside the source tree; images are stored in SQLite too. Settings opens the data folder. `--data-dir` supports isolated profiles. Linux uses `$XDG_DATA_HOME/ClipVault` or `~/.local/share/ClipVault`; hotkeys/startup integration are Windows-only.
 
-GitHub requires sign-in for the [verified Windows x64 ZIP](https://github.com/fqxxzyw/ClipVault/actions/runs/38357562691/artifacts/11793796402). **Extract the complete ZIP**, then run `ClipVault.exe` without Python installed. Keep `_internal`, `licenses` and notices. Artifacts expire; rebuild or rerun CI when needed. SHA-256: `98c3d617681abd8190e8e69ed16b447b059b86551eb2ed71280bb6f2d3f84e59`. The release links to the Actions artifact; no binary Release attachment has been uploaded.
+Download the [verified Windows x64 ZIP](https://github.com/fqxxzyw/ClipVault/releases/download/v0.3.0-preview.1/ClipVault-0.3.0-preview.1-windows-x64.zip) from Release Assets without signing in. **Extract the complete ZIP**, then run `ClipVault.exe` without Python installed. Keep `_internal`, `licenses` and notices. The complete ZIP is attached to the release. SHA-256: `98c3d617681abd8190e8e69ed16b447b059b86551eb2ed71280bb6f2d3f84e59`. The release includes the complete Windows binary ZIP.
 
 ## Privacy and limits
 
