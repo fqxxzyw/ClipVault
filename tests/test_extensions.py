@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QMessageBox
 from clipvault.app import ClipVaultApplication
 from clipvault.core.classifier import classify
 from clipvault.core.emoji import emoji_count
+from clipvault.database.migrations import SCHEMA_VERSION
 from clipvault.database.models import SearchRequest, utc_now
 from clipvault.services.markdown import MARKDOWN_FEATURES, LocalDocument, markdown_plain_text
 from clipvault.ui import motion
@@ -358,7 +359,7 @@ def test_v2_migration_retains_history_and_new_tables(tmp_path):
     repository = Repository(path)
     try:
         assert repository.get(1).is_favorite and repository.get(1).is_pinned
-        assert repository.connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert repository.connection.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
         assert repository.statistics()["captures"] == 0
     finally:
         repository.close()

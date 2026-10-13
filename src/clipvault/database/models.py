@@ -1,26 +1,13 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-CONTENT_TYPES = (
-    "text",
-    "url",
-    "python",
-    "javascript",
-    "json",
-    "shell",
-    "sql",
-    "markdown",
-    "image",
-    "files",
-)
+from clipvault.core.languages import CODE_LABELS, CODE_TYPES
+
+CONTENT_TYPES = ("text", "url", *CODE_TYPES, "markdown", "image", "files")
 TYPE_LABELS = {
     "text": "TXT",
     "url": "URL",
-    "python": "Python",
-    "javascript": "JavaScript",
-    "json": "JSON",
-    "shell": "Shell",
-    "sql": "SQL",
+    **CODE_LABELS,
     "markdown": "Markdown",
     "image": "Image",
     "files": "Files",

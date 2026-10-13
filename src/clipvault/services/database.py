@@ -178,6 +178,8 @@ class DatabaseWorker(QObject):
                         if clip and clip.content_type == "markdown"
                         else None
                     )
+                elif name == "set_type":
+                    value = repo.set_type(*payload)
                 elif name == "mark_markdown":
                     value = repo.mark_markdown(payload)
                 elif name == "get_image":

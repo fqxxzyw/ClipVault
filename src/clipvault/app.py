@@ -41,7 +41,8 @@ class ClipVaultApplication(QObject):
             self.settings = Settings()
             settings_warning = "设置无法读取，已使用默认设置。原设置文件未删除。"
         self.application.setQuitOnLastWindowClosed(False)
-        self.application.setStyle("Fusion")
+        if sys.platform != "win32":
+            self.application.setStyle("Fusion")
         apply_theme(application, self.settings.theme, self.settings.font_size)
         self.window = MainWindow(self.settings)
         self.window.setWindowIcon(QIcon(str(resource_path("clipvault.svg"))))
@@ -102,6 +103,8 @@ class ClipVaultApplication(QObject):
         self.mini.refresh_requested.connect(self.window.refresh)
         self.mini.more_requested.connect(self.window._load_more)
         self.mini.dismissed.connect(self._mini_dismissed)
+        self.mini.preferences_requested.connect(self._mini_preferences)
+        self.mini.geometry_changed.connect(self._mini_geometry)
         self.hotkeys.activated.connect(self.toggle_window)
         self.clipboard.captured.connect(
             lambda text, timestamp: self.database.submit("capture", (text, timestamp))
@@ -121,6 +124,9 @@ class ClipVaultApplication(QObject):
         preview.delete_requested.connect(self._delete)
         preview.format_requested.connect(self._format)
         preview.open_url_requested.connect(self._open_url)
+        preview.language_requested.connect(
+            lambda kind: self.database.submit("set_type", (self.window.current_id(), kind))
+        )
         preview.markdown_copy_requested.connect(
             lambda mode: self._copy_markdown(self.window.current_id(), mode)
         )
@@ -210,6 +216,42 @@ class ClipVaultApplication(QObject):
         if self.tray is None:
             self.window.showMinimized()
 
+    def _mini_preferences(self, values):
+        allowed = {"mini_opacity", "mini_topmost", "mini_glass"}
+        if not isinstance(values, dict) or set(values) - allowed:
+            return
+        candidate = replace(self.settings, **values)
+        try:
+            self.store.save(candidate)
+        except SettingsError:
+            self.window.notify(tr("Mini window preferences could not be saved."), persistent=True)
+            self.mini.apply_settings(self.settings)
+            return
+        self.settings = candidate
+        self.window.settings = candidate
+        page = self.window.settings_page
+        page.current = replace(page.current, **values)
+        page.mini_opacity.setValue(candidate.mini_opacity)
+        page.mini_topmost.setChecked(candidate.mini_topmost)
+        page.mini_glass.setChecked(candidate.mini_glass)
+        self.mini.apply_settings(candidate)
+
+    def _mini_geometry(self, geometry):
+        if self._stopping:
+            return
+        candidate = replace(self.settings, mini_geometry=tuple(geometry))
+        if candidate.mini_geometry == self.settings.mini_geometry:
+            return
+        try:
+            self.store.save(candidate)
+        except SettingsError:
+            return
+        self.settings = candidate
+        self.window.settings = candidate
+        self.window.settings_page.current = replace(
+            self.window.settings_page.current, mini_geometry=tuple(geometry)
+        )
+
     def show_settings(self):
         self.mini.hide()
         self.window.show_panel()
@@ -284,7 +326,7 @@ class ClipVaultApplication(QObject):
 
             self.database.submit("capture", (self._emoji_text, utc_now()))
         self.window.notify("已复制到系统剪贴板。")
-        if self.mini.isVisible():
+        if self.mini.isVisible() and not self.settings.mini_topmost:
             self.mini.dismiss_panel()
         if self.settings.copy_notification and self.tray is not None:
             self.tray.showMessage(
@@ -350,7 +392,16 @@ class ClipVaultApplication(QObject):
             self.window.statistics_page.update_values(value)
         elif name == "reset_stats":
             self._query_stats()
-        elif name in {"initialize", "flag", "delete", "touch", "clear", "cleanup", "mark_markdown"}:
+        elif name in {
+            "initialize",
+            "flag",
+            "delete",
+            "touch",
+            "clear",
+            "cleanup",
+            "mark_markdown",
+            "set_type",
+        }:
             self.refresh_timer.start()
             if name == "clear":
                 self.window.notify(
@@ -389,7 +440,7 @@ class ClipVaultApplication(QObject):
 
     def save_settings(self, candidate: Settings):
         old = self.settings
-        candidate = replace(candidate, paused=old.paused)
+        candidate = replace(candidate, paused=old.paused, mini_geometry=old.mini_geometry)
         startup_snapshot = None
         changed_hotkey = False
         try:
@@ -466,5 +517,7 @@ class ClipVaultApplication(QObject):
             self.tray.hide()
         self.database.close()
         self.window.motion.stop()
+        self.mini.geometry_timer.stop()
+        self.mini.glow_animation.stop()
         self.mini.hide()
         self.window.hide()

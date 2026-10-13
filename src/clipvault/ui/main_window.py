@@ -29,6 +29,7 @@ from clipvault.ui.motion import Motion, system_reduces_motion
 from clipvault.ui.preview_panel import PreviewPanel
 from clipvault.ui.settings_page import SettingsPage
 from clipvault.ui.tools_pages import EmojiPage, StatisticsPage
+from clipvault.ui.windows_frame import apply_windows_frame
 from clipvault.utils.settings import Settings
 
 
@@ -122,7 +123,7 @@ class MainWindow(QMainWindow):
         small.setObjectName("muted")
         privacy_layout.addWidget(small)
         side.addWidget(privacy)
-        version = QLabel("CLIPVAULT  /  0.2.0")
+        version = QLabel("CLIPVAULT  /  0.3.0")
         version.setObjectName("eyebrow")
         version.setContentsMargins(8, 14, 0, 0)
         side.addWidget(version)
@@ -300,6 +301,7 @@ class MainWindow(QMainWindow):
 
     def apply_settings(self, settings: Settings):
         self.settings = settings
+        apply_windows_frame(self, dark=settings.theme == "dark", glass=True)
         set_language(settings.language)
         self.motion.configure(settings.reduce_motion)
         for effect in (
@@ -330,6 +332,7 @@ class MainWindow(QMainWindow):
         self._translate_dynamic()
         self.list_view.setAccessibleName(tr("History list"))
         self.preview.browser.setAccessibleName(tr("Preview"))
+        self.preview.language.setAccessibleName(tr("Content language"))
         self.preview.md_view.setAccessibleName(tr("Markdown preview mode"))
         self.preview.md_copy.setAccessibleName(tr("Markdown copy format"))
         self.date_from.setAccessibleName(tr("From"))
@@ -663,3 +666,7 @@ class MainWindow(QMainWindow):
             self.quit_requested.emit()
         else:
             self.hide()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        apply_windows_frame(self, dark=self.settings.theme == "dark", glass=True)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clipvault"
-version = "0.2.0"
+version = "0.3.0"
 description = "A lightweight, offline-first clipboard manager for Windows"
 readme = "README_EN.md"
 requires-python = ">=3.11"

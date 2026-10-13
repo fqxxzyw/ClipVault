@@ -3,7 +3,14 @@
 import ctypes
 import sys
 
-from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, Qt
+from PySide6.QtCore import (
+    QEasingCurve,
+    QObject,
+    QParallelAnimationGroup,
+    QPoint,
+    QPropertyAnimation,
+    Qt,
+)
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QLabel
 
 
@@ -24,6 +31,7 @@ class Motion(QObject):
         super().__init__(parent)
         self.reduced = False
         self.active = {}
+        self._slide_targets = {}
 
     def configure(self, reduced: bool):
         self.reduced = reduced
@@ -39,6 +47,9 @@ class Motion(QObject):
         if entry:
             animation, overlay = entry
             animation.stop()
+            slide = self._slide_targets.pop(widget, None)
+            if slide:
+                slide[0].move(slide[1])
             overlay.hide()
             overlay.deleteLater()
             animation.deleteLater()
@@ -57,12 +68,24 @@ class Motion(QObject):
         effect = QGraphicsOpacityEffect(overlay)
         overlay.setGraphicsEffect(effect)
         animation = QPropertyAnimation(effect, b"opacity", self)
-        animation.setDuration(200)
-        animation.setStartValue(0.35)
+        animation.setDuration(220)
+        animation.setStartValue(0.65)
         animation.setEndValue(0.0)
         animation.setEasingCurve(QEasingCurve.Type.OutCubic)
-        self.active[widget] = (animation, overlay)
-        animation.finished.connect(lambda: self._finish(widget))
+        group = QParallelAnimationGroup(self)
+        group.addAnimation(animation)
+        if hasattr(widget, "currentWidget") and widget.currentWidget() is not None:
+            page = widget.currentWidget()
+            destination = page.pos()
+            slide = QPropertyAnimation(page, b"pos", group)
+            slide.setDuration(220)
+            slide.setStartValue(destination + QPoint(0, 12))
+            slide.setEndValue(destination)
+            slide.setEasingCurve(QEasingCurve.Type.OutCubic)
+            group.addAnimation(slide)
+            self._slide_targets[widget] = (page, destination)
+        self.active[widget] = (group, overlay)
+        group.finished.connect(lambda: self._finish(widget))
         overlay.show()
         overlay.raise_()
-        animation.start()
+        group.start()

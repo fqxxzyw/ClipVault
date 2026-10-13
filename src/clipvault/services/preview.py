@@ -4,6 +4,8 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 
+from clipvault.core.languages import CODE_TYPES, LEXER_ALIASES
+
 PREVIEW_LIMIT = 20_000
 
 
@@ -11,8 +13,8 @@ def render_preview(text: str, content_type: str, theme: str, font_size: int) -> 
     sample = text[:PREVIEW_LIMIT]
     dark = theme == "dark"
     foreground, background = ("#dce4f4", "#161c29") if dark else ("#293246", "#ffffff")
-    if content_type in {"python", "javascript", "json", "shell", "sql"}:
-        lexer = get_lexer_by_name("bash" if content_type == "shell" else content_type)
+    if content_type in CODE_TYPES:
+        lexer = get_lexer_by_name(LEXER_ALIASES.get(content_type, content_type))
         formatter = HtmlFormatter(noclasses=True, style="native" if dark else "friendly")
         body = highlight(sample, lexer, formatter)
     else:

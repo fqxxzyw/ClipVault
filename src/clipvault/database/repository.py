@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from clipvault.core.classifier import classify
+from clipvault.core.languages import CODE_TYPES
 from clipvault.database.migrations import migrate
 from clipvault.database.models import (
     CONTENT_TYPES,
@@ -72,6 +73,21 @@ class Repository:
             )
         return self.get(clip_id)
 
+    def set_type(self, clip_id: int, kind: str):
+        if kind == "auto":
+            clip = self.get(clip_id)
+            if clip is None:
+                return
+            kind = classify(clip.content)
+        if kind not in (*CODE_TYPES, "text", "markdown", "url"):
+            raise ValueError("Unsupported language")
+        with self.connection:
+            self.connection.execute(
+                "UPDATE clipboard_history SET content_type = ? WHERE id = ? "
+                "AND content_type NOT IN ('image','files','url')",
+                (kind, clip_id),
+            )
+
     def touch(self, clip_id: int) -> None:
         with self.connection:
             self.connection.execute(
@@ -102,8 +118,8 @@ class Repository:
             raise ValueError("Unknown scope")
         conditions, values = [], []
         if request.content_type == "code":
-            conditions.append("content_type IN (?, ?, ?, ?, ?)")
-            values.extend(("python", "javascript", "json", "shell", "sql"))
+            conditions.append("content_type IN (" + ",".join("?" for _ in CODE_TYPES) + ")")
+            values.extend(CODE_TYPES)
         elif request.content_type != "all":
             conditions.append("content_type = ?")
             values.append(request.content_type)

@@ -40,6 +40,74 @@ def classify(text: str) -> str:
     sample = sample[:16_000]
     if re.search(r"(?ms)^ {0,3}(```|~~~)[^\n]*\n.+?^ {0,3}\1\s*$", sample):
         return "markdown"
+    # Distinctive syntax only. Ambiguous snippets remain selectable manually.
+    for language, pattern in (
+        ("php", r"(?i)^\s*<\?php\b"),
+        (
+            "html",
+            r"(?is)^\s*(?:<!doctype\s+html|<html\b|<(div|section|article|h[1-6]|body|p|form|button|table|main|header|footer|nav|ul|ol|a|style|script)\b[^>]*>.*</\1\s*>)",
+        ),
+        ("xml", r"(?is)^\s*<\?xml\b|^\s*<([\w:-]+)\b[^>]*>.*</\1\s*>\s*$"),
+        (
+            "typescript",
+            r"(?m)^\s*(?:export\s+)?(?:interface\s+\w+\s*(?:extends[^\{]+)?\{|type\s+\w+\s*=)|(?:const|let)\s+\w+\s*:\s*(?:string|number|boolean|[A-Z]\w*)\b",
+        ),
+        (
+            "csharp",
+            r"(?m)^\s*using\s+System(?:[.;])|\bConsole\.(?:WriteLine|ReadLine)\s*\(|\bpublic\s+static\s+void\s+Main\(",
+        ),
+        (
+            "java",
+            r"(?m)^\s*(?:package\s+[\w.]+;|import\s+java\.)|\bpublic\s+static\s+void\s+main\(|\bSystem\.out\.println\(",
+        ),
+        (
+            "rust",
+            r"(?m)^\s*(?:(?:pub\s+)?(?:async\s+)?fn\s+\w+\s*\(|use\s+std::|impl(?:<[^>]+>)?\s+\w+\s*\{|let\s+mut\s+\w+)",
+        ),
+        (
+            "go",
+            r"(?m)^\s*package\s+\w+\s*$|\bfmt\.(?:Println|Printf|Sprintf)\(|^\s*func\s+main\(\)\s*\{",
+        ),
+        ("kotlin", r"(?m)^\s*(?:fun\s+\w+\s*\(|data\s+class\s+\w+\s*\()"),
+        (
+            "swift",
+            r"(?m)^\s*import\s+(?:SwiftUI|Foundation|UIKit)\b|^\s*func\s+\w+\([^\n]*\)\s*->|\bstruct\s+\w+\s*:\s*View\b",
+        ),
+        (
+            "dart",
+            r"(?m)^\s*import\s+['\"]dart:|\bvoid\s+main\(\)\s*(?:async\s*)?\{.*(?:print\(|runApp\()",
+        ),
+        (
+            "cpp",
+            r"(?m)^\s*#include\s*<(?:iostream|vector|string|memory|algorithm)>|\bstd::(?:cout|vector|string|unique_ptr)\b",
+        ),
+        ("c", r"(?m)^\s*#include\s*[<\"](?:stdio|stdlib|string|stdint)\.h[>\"]"),
+        (
+            "powershell",
+            r"(?im)^\s*(?:Get|Set|New|Remove|Write|Invoke|Import|Export)-(?:Item|ChildItem|Content|Host|Output|Process|Service|Module|Command|WebRequest|RestMethod)\b|^\s*param\s*\(.*\$",
+        ),
+        ("ruby", r"(?ms)^\s*(?:def\s+\w+[^:\n]*\n|module\s+\w+\s*\n).*^\s*end\s*$"),
+        (
+            "css",
+            r"(?s)^\s*[^\n{}]+\{\s*(?:color|background(?:-color)?|display|font(?:-size)?|margin|padding|border|width|height|position)\s*:[^{}]+\}",
+        ),
+    ):
+        if re.search(pattern, sample):
+            return language
+    if re.search(r"(?m)^\s*\[[\w .:-]+\]\s*$", sample) and re.search(
+        r"(?m)^\s*[\w.-]+\s*=", sample
+    ):
+        import tomllib
+
+        try:
+            tomllib.loads(sample)
+            if re.search(r"=\s*(?:[\"]|\[|true\b|false\b|\d+)", sample):
+                return "toml"
+        except tomllib.TOMLDecodeError:
+            pass
+        return "ini"
+    if len(re.findall(r"(?m)^\s*[\w.-]+:\s*(?:\S|$)", sample)) >= 2:
+        return "yaml"
     if re.search(
         r"(?is)^\s*(?:--[^\n]*\n\s*)?(?:"
         r"SELECT\s+.+?\s+FROM\s+|INSERT\s+INTO\s+|UPDATE\s+\w+\s+SET\s+|"

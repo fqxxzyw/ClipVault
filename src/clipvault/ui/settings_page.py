@@ -71,6 +71,29 @@ class SettingsPage(QWidget):
         )
         layout.addWidget(appearance)
 
+        self.mini_opacity = QSpinBox()
+        self.mini_opacity.setRange(40, 100)
+        self.mini_opacity.setSuffix(" %")
+        self.mini_topmost = QCheckBox("Keep the mini window above other windows")
+        self.mini_glass = QCheckBox("Liquid glass appearance")
+        mini_hint = QLabel(
+            "Drag anywhere to move; drag edges to resize. Windows 11 Acrylic blur is used "
+            "when supported; other systems use translucent glass styling."
+        )
+        mini_hint.setWordWrap(True)
+        mini_hint.setObjectName("muted")
+        layout.addWidget(
+            self._section(
+                "Mini window",
+                [
+                    ("Mini opacity", self.mini_opacity),
+                    ("", self.mini_topmost),
+                    ("", self.mini_glass),
+                    ("", mini_hint),
+                ],
+            )
+        )
+
         self.hotkey = QLineEdit()
         self.hotkey.setPlaceholderText("Ctrl+Shift+V")
         self.hotkey.setMaxLength(80)
@@ -179,6 +202,9 @@ class SettingsPage(QWidget):
         self.reduce_motion.setChecked(settings.reduce_motion)
         self.font_size.setValue(settings.font_size)
         self.opacity.setValue(settings.opacity)
+        self.mini_opacity.setValue(settings.mini_opacity)
+        self.mini_topmost.setChecked(settings.mini_topmost)
+        self.mini_glass.setChecked(settings.mini_glass)
         self.hotkey.setText(settings.hotkey)
         self.max_history.setValue(settings.max_history)
         self.retention.setCurrentIndex(self.retention.findData(settings.retention_days))
@@ -203,6 +229,9 @@ class SettingsPage(QWidget):
                 shortcut_panel=self.shortcut_panel.currentData(),
                 font_size=self.font_size.value(),
                 opacity=self.opacity.value(),
+                mini_opacity=self.mini_opacity.value(),
+                mini_topmost=self.mini_topmost.isChecked(),
+                mini_glass=self.mini_glass.isChecked(),
                 hotkey=self.hotkey.text().strip(),
                 max_history=self.max_history.value(),
                 retention_days=self.retention.currentData(),

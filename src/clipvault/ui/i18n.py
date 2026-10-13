@@ -315,6 +315,32 @@ PAIRS += [
     ("Rainbow flag", "彩虹旗"),
 ]
 PAIRS += [("Offline. On your device.", "完全离线，数据在本地。"), ("TXT", "TXT · 文本")]
+PAIRS += [
+    ("Always on top", "窗口置顶"),
+    ("Mini window appearance", "小窗外观"),
+    ("Mini opacity", "小窗透明度"),
+    ("Liquid glass appearance", "液态玻璃外观"),
+    ("Keep the mini window above other windows", "小窗始终保持在其他窗口上方"),
+    ("Reset size and position", "重置大小和位置"),
+    (
+        "Drag to move · Drag edges to resize · Click to copy · Enter / Esc",
+        "拖动移动 · 边缘缩放 · 单击复制 · Enter / Esc",
+    ),
+    ("Mini window preferences could not be saved.", "小窗设置无法保存。"),
+    ("Content language", "内容语言"),
+    (
+        "Static HTML: scripts and external resources are disabled. "
+        "CSS support is Qt rich text, not a web browser.",
+        "静态 HTML：禁用脚本和外部资源。CSS 使用 Qt 富文本支持范围，不是完整网页浏览器。",
+    ),
+    (
+        "Drag anywhere to move; drag edges to resize. Windows 11 Acrylic blur is used "
+        "when supported; other systems use translucent glass styling.",
+        "普通拖动即可移动，拖动边缘调整大小。支持时请求 Windows 11 Acrylic 模糊，"
+        "其他系统显示半透明玻璃外观。",
+    ),
+]
+PAIRS += [("Auto detect", "自动识别")]
 ZH = dict(PAIRS)
 EN = {zh: en for en, zh in PAIRS}
 _language = "en"

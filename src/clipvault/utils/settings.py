@@ -16,6 +16,10 @@ class Settings:
     shortcut_panel: str = "full"
     capture_images: bool = True
     capture_files: bool = True
+    mini_opacity: int = 96
+    mini_topmost: bool = False
+    mini_glass: bool = True
+    mini_geometry: tuple[int, int, int, int] | None = None
     hotkey: str = "Ctrl+Shift+V"
     max_history: int = 5000
     retention_days: int = 30
@@ -41,10 +45,27 @@ class Settings:
             ("max_history", 100, 100_000),
             ("opacity", 65, 100),
             ("font_size", 11, 20),
+            ("mini_opacity", 40, 100),
         ):
             value = getattr(self, field)
             if type(value) is not int or not minimum <= value <= maximum:
                 raise SettingsError("Invalid numeric setting")
+        if self.mini_geometry is not None:
+            geometry = self.mini_geometry
+            if (
+                not isinstance(geometry, (tuple, list))
+                or len(geometry) != 4
+                or any(type(value) is not int for value in geometry)
+            ):
+                raise SettingsError("Invalid mini window geometry")
+            x, y, width, height = geometry
+            if not (
+                -100_000 <= x <= 100_000
+                and -100_000 <= y <= 100_000
+                and 240 <= width <= 4000
+                and 160 <= height <= 4000
+            ):
+                raise SettingsError("Invalid mini window geometry")
         if type(self.retention_days) is not int or self.retention_days not in {0, 7, 30, 90}:
             raise SettingsError("Invalid retention period")
         if not isinstance(self.hotkey, str):
@@ -63,6 +84,8 @@ class Settings:
             "reduce_motion",
             "capture_images",
             "capture_files",
+            "mini_topmost",
+            "mini_glass",
         ):
             if type(getattr(self, field)) is not bool:
                 raise SettingsError("Invalid boolean setting")
@@ -83,6 +106,8 @@ class SettingsStore:
             if not isinstance(raw, dict):
                 raise SettingsError("Settings must be an object")
             allowed = {field.name for field in fields(Settings)}
+            if isinstance(raw.get("mini_geometry"), list):
+                raw["mini_geometry"] = tuple(raw["mini_geometry"])
             return Settings(
                 **{key: value for key, value in raw.items() if key in allowed}
             ).validate()

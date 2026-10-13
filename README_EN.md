@@ -10,15 +10,16 @@ A lightweight, privacy-first clipboard manager for Windows.
 - **Find and reuse:** Chinese substring search, Code / TXT / Markdown categories, dates, favorites and pins.
 - **Simple desktop workflow:** bilingual UI, dark/light themes, a content-only mini picker, highlighting and local Markdown preview.
 
-Current version: **0.2.0 Preview 1**. [Preview release and Windows downloads](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.2.0-preview.1). Both Linux jobs passed 123 tests; Windows passed 122 tests, built the EXE and passed isolated startup checks. [Actual CI](https://github.com/fqxxzyw/ClipVault/actions/runs/38339833962). Interactive Windows 10/11 acceptance remains pending.
+Current source: **0.3.0**, Windows build verification pending. The previous [0.2.0 preview](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.2.0-preview.1) does not include the new mini-window movement/resizing and expanded language support. Current download links will be updated after CI. Interactive Windows acceptance remains pending.
 
 ## Actual screenshots
 
 Captured from the running PySide6 app on **Linux / Qt offscreen**, using public samples and a disposable profile. These are neither mockups nor Windows desktop validation. The image sample is drawn by the test script; file samples refer to nonexistent paths.
 
 ![English dark theme](screenshots/clipvault-dark.png)
-![Markdown in the Chinese UI](screenshots/clipvault-markdown.png)
-![Content-only mini picker](screenshots/clipvault-mini.png)
+![Static HTML preview](screenshots/clipvault-html.png)
+![Glass mini picker](screenshots/clipvault-glass-mini.png)
+![Recorded running page animations](screenshots/clipvault-motion.gif)
 
 [Light](screenshots/clipvault-light.png) · [Settings](screenshots/clipvault-settings.png) · [Statistics](screenshots/clipvault-statistics.png) · [Emoji](screenshots/clipvault-emoji.png) · [Images](screenshots/clipvault-image.png) · [File paths](screenshots/clipvault-files.png)
 
@@ -31,14 +32,15 @@ Copy in another application. ClipVault captures clipboard change events and save
 | Search and categories | Literal multi-term AND search, Chinese substring fallback, Code group (Python/JS/JSON/Shell/SQL), TXT, Markdown, URLs, images and files |
 | Dates | All, today, last 7/30 days or custom inclusive local dates; based on last copied time |
 | Markdown | Rendered/source view; **Copy Markdown** keeps the original, **Copy plain text** removes Markdown formatting. Plain text can be explicitly marked as Markdown and the type persists |
-| Mini picker | Content only; single-click or Enter copies and hides after success; Markdown context menu chooses copy format; scroll to load more |
+| Mini picker | Normal drag movement and edge/corner resizing, saved geometry, topmost pin, independent 40–100% opacity and glass menu; pinned copying stays visible; Markdown copy modes and paging |
+| HTML / languages | Static HTML/source view; 24 code/config languages including C/C++/C#, TypeScript, Java, Go, Rust, PHP, Kotlin and Swift; manual selector and Auto detect reclassification |
 | Emoji | Offline common emoji; click or Space to copy, with history recording when active |
 | Images | Local PNG storage, thumbnails, proportional preview, original-image copy and SHA-256 deduplication; deletion also removes image data |
 | Files | Save local file paths, display consistent file icons, copy paths as text. No file contents are read, uploaded, moved or restored as copy/cut operations |
 | Favorites and pins | Separate navigation, persistent flags and protection from automatic cleanup/ordinary-history clearing |
 | Statistics | Captured copy events, ClipVault reuse events, copied characters/lines/common emoji, images and file selections; date period and confirmed reset |
 | Settings | System/Chinese/English language, dark/light, font, opacity, shortcut, startup, notifications and retention; apply on save |
-| Motion | Interruptible 200ms page/list transitions, hover/pressed/focus states; reduced-motion setting and Windows client-area animation preference |
+| Motion | Interruptible 220ms page slide/fade and list transitions; smooth pointer-following glass highlights, hover/pressed/focus states; reduced-motion setting and Windows client-area animation preference |
 
 Counters start with this version, not inferred from old history. Repeated copies count as events while history deduplicates. Paused or filtered copies are excluded. Character counts use Python Unicode length, lines use `splitlines()`. Common ZWJ/skin-tone/flag emoji sequences count together; this is not complete Unicode grapheme segmentation. **Paste count is unavailable:** the clipboard provides no paste event and this app does not record keyboard input. Reuse is never presented as a paste count. Only local numeric aggregates are stored.
 
@@ -50,10 +52,10 @@ Counters start with this version, not inferred from old history. Repeated copies
 | Up / Down, Enter | Select and copy; keyboard/default copying preserves original Markdown |
 | Esc | Hide quick panel; main-window minimize fallback without a tray; mini always hides |
 | Alt+F in mini | Return to full window |
-| Alt+drag in mini | Move the borderless picker |
+| Normal drag / edge drag in mini | Move / resize without Alt; dragging does not copy |
 | Tab / Shift+Tab, Space | Keyboard navigation and button activation |
 
-Auto-hide applies to quick panels and the mini picker. Closing normally hides to the tray, with optional quit-on-close; without a tray, closing the main window exits. Startup never reads the existing clipboard.
+Auto-hide applies to quick panels and unpinned mini windows. Pinned copying and focus loss keep the picker visible; Esc/Close can still hide it. Closing normally hides to the tray, with optional quit-on-close; without a tray, closing the main window exits. Startup never reads the existing clipboard.
 
 ## Install from source
 
@@ -80,6 +82,10 @@ Text limit: **100,000 characters**, preview: **20,000**; Details keeps full cont
 Default secret heuristics recognize common keys, password fields and tokens, with false positives and false negatives. **Images have no sensitive-content detection**; paths can disclose private information. Disable image/file capture in Settings or pause before confidential copies. SQLite and images are unencrypted. `secure_delete` and WAL checkpoints do not guarantee secure erasure from SSDs, snapshots or backups.
 
 Cleanup supports never/7/30/90 days and ordinary-history count limits; favorites/pins are protected. Deleting or clearing ordinary history removes linked images. Many images can consume considerable disk space; adjust retention. Statistics reset requires separate confirmation.
+
+HTML uses local Qt rich text, not a full browser: scripts, external resources and navigation are disabled. Common text/styles/tables work; Flex/Grid, web animations and interaction do not. Recognition remains conservative; ambiguous clips can be assigned manually.
+
+Documented DWM APIs request Windows 11 dark captions, rounded system corners and Mica/Acrylic. The mini picker also draws translucent glass, soft light and reflective borders. Native Windows 11 blur requires physical-desktop verification; other platforms fall back to translucent styling, not Apple's optical liquid-glass refraction. Reduced motion disables custom page slides and animated highlights; idle windows have no animation timer.
 
 No core network requests, accounts or telemetry. Markdown denies network, local, relative and data image resources, disables embedded HTML and does not open links. Explicit HTTP(S) browser actions may cause the user's browser to connect. Clipboard code is never run; content is never logged or included in exceptions.
 
@@ -111,7 +117,7 @@ python -m clipvault --smoke-test
 python scripts/capture_screenshots.py --offscreen
 ```
 
-Local result: **123 passed / 3 skipped**, the latter are opt-in Windows desktop tests. Use the [checklist](docs/WINDOWS_CHECKLIST.md), `QT_QPA_PLATFORM=windows` and `CLIPVAULT_DESKTOP_TESTS=1` for native checks. CI checks Ubuntu Python 3.11/3.12 and builds/smokes/uploads the Windows onedir bundle. It does not assume an interactive runner. See [validation](docs/VALIDATION.md) and actual Actions.
+Local result: **158 passed / 3 skipped**, the latter are opt-in Windows desktop tests. Use the [checklist](docs/WINDOWS_CHECKLIST.md), `QT_QPA_PLATFORM=windows` and `CLIPVAULT_DESKTOP_TESTS=1` for native checks. CI checks Ubuntu Python 3.11/3.12 and builds/smokes/uploads the Windows onedir bundle. It does not assume an interactive runner. See [validation](docs/VALIDATION.md) and actual Actions.
 
 ## Contribute and license
 

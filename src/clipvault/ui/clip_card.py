@@ -85,7 +85,7 @@ class ClipCardDelegate(QStyledItemDelegate):
             )
         )
         painter.setPen(QPen(QColor(colors["accent"] if selected else colors["border"]), 1))
-        painter.drawRoundedRect(rect, 10, 10)
+        painter.drawRoundedRect(rect, 14, 14)
         left, top, width = rect.x() + 13, rect.y() + 12, rect.width() - 26
         font = QFont("Segoe UI", 9)
         font.setBold(True)

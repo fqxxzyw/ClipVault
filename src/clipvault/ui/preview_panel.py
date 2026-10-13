@@ -18,7 +18,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from clipvault.core.languages import CODE_LABELS
 from clipvault.database.models import TYPE_LABELS, Clip
+from clipvault.services.html_preview import static_html
 from clipvault.services.markdown import MARKDOWN_FEATURES, LocalDocument
 from clipvault.services.preview import PREVIEW_LIMIT
 from clipvault.ui.i18n import tr
@@ -34,6 +36,7 @@ class PreviewPanel(QWidget):
     open_url_requested = Signal()
     markdown_requested = Signal()
     markdown_copy_requested = Signal(str)
+    language_requested = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -59,7 +62,21 @@ class PreviewPanel(QWidget):
         self.badge.setProperty("i18nSkip", True)
         title_row.addWidget(title)
         title_row.addStretch()
-        title_row.addWidget(self.badge)
+        self.badge.hide()
+        self.language = QComboBox()
+        self.language.addItem("Auto detect", "auto")
+        for kind, label in {"text": "TXT", **CODE_LABELS, "markdown": "Markdown"}.items():
+            self.language.addItem(label, kind)
+        self.language.setMaximumWidth(150)
+        self.language.setAccessibleName(tr("Content language"))
+        self.language.activated.connect(
+            lambda: (
+                self.language_requested.emit(self.language.currentData())
+                if self.clip is not None
+                else None
+            )
+        )
+        title_row.addWidget(self.language)
         layout.addLayout(title_row)
         self.meta = QLabel("Select a clip to get started")
         self.meta.setObjectName("muted")
@@ -157,7 +174,12 @@ class PreviewPanel(QWidget):
             tr("Copy paths" if clip and clip.content_type == "files" else "Copy to clipboard")
         )
         self.copy.setAccessibleName(self.copy.text())
-        self.md_controls.setVisible(clip is not None and clip.content_type == "markdown")
+        self.md_controls.setVisible(clip is not None and clip.content_type in {"markdown", "html"})
+        self.md_copy.setVisible(clip is not None and clip.content_type == "markdown")
+        self.language.setVisible(clip is None or clip.content_type not in {"image", "files", "url"})
+        self.language.setEnabled(clip is not None)
+        if clip is not None:
+            self.language.setCurrentIndex(self.language.findData(clip.content_type))
         if clip is None:
             self.badge.setText("TEXT")
             self.meta.setText(tr("Select a clip to get started"))
@@ -214,6 +236,15 @@ class PreviewPanel(QWidget):
                 self.clip.content[:PREVIEW_LIMIT], MARKDOWN_FEATURES
             )
             self.browser.setToolTip(tr("Markdown preview does not load images or open links."))
+        elif self.clip.content_type == "html" and self.md_view.currentData() == "rendered":
+            self.browser.document().setDefaultStyleSheet("")
+            self.browser.setHtml(static_html(self.clip.content[:PREVIEW_LIMIT]))
+            self.browser.setToolTip(
+                tr(
+                    "Static HTML: scripts and external resources are disabled. "
+                    "CSS support is Qt rich text, not a web browser."
+                )
+            )
         else:
             self.browser.setHtml(self.rendered)
             self.browser.setToolTip("")

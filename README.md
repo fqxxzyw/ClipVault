@@ -10,14 +10,15 @@ Your Clipboard. Your Data. Your Control.
 - **快捷搜索，快速复用**：中文子串搜索、Code / TXT / MD 分类、日期筛选、收藏与置顶。
 - **轻量简洁，开箱即用**：中英文界面、深浅主题、内容小窗、代码高亮和本地 Markdown 预览。
 
-当前版本 **0.2.0 Preview 1**：[预览发布与 Windows 下载](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.2.0-preview.1)。Linux 两组各 123 项测试通过，Windows 122 项通过，EXE 构建与隔离启动检查通过；[实际 CI](https://github.com/fqxxzyw/ClipVault/actions/runs/38339833962)。真实 Windows 10/11 桌面验收尚未完成。
+当前源码 **0.3.0**，本次 Windows 构建正在验证。此前 [0.2.0 预览版](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.2.0-preview.1) 不包含新的小窗移动/缩放与扩展语言功能。构建验证后更新当前下载入口；真实 Windows 10/11 实机验收尚未完成。
 
 ## 真实运行截图
 
 以下截图来自实际运行的 PySide6 程序，在 **Linux / Qt offscreen** 环境使用公开示例与临时数据库拍摄；不是效果图，也不代表 Windows 实机验证。图片页中的图片是生成于测试脚本的合成样例，文件页使用不存在的示例路径。
 
-![Markdown 中文界面](screenshots/clipvault-markdown.png)
-![只显示内容的小窗](screenshots/clipvault-mini.png)
+![HTML 静态预览与新界面](screenshots/clipvault-html.png)
+![可拖动缩放、置顶的玻璃小窗](screenshots/clipvault-glass-mini.png)
+![实际运行的页面过渡](screenshots/clipvault-motion.gif)
 
 [英文深色](screenshots/clipvault-dark.png) · [英文浅色](screenshots/clipvault-light.png) · [设置](screenshots/clipvault-settings.png) · [统计](screenshots/clipvault-statistics.png) · [Emoji](screenshots/clipvault-emoji.png) · [图片](screenshots/clipvault-image.png) · [文件路径](screenshots/clipvault-files.png)
 
@@ -27,17 +28,18 @@ Your Clipboard. Your Data. Your Control.
 
 | 功能 | 使用方式 |
 | --- | --- |
-| 分类与搜索 | 顶部类型筛选选 Code（Python / JS / JSON / Shell / SQL）、TXT、Markdown、URL、图片或文件；搜索多个关键词按 AND 匹配 |
+| 分类与搜索 | 顶部类型筛选选 Code（24 种代码/配置语言）、TXT、Markdown、URL、图片或文件；搜索多个关键词按 AND 匹配 |
 | 日期筛选 | 所有日期、今天、最近 7/30 天或自定义区间；按最近复制时间，使用本地日期，结束日期包含当天 |
 | Markdown | 显示渲染预览或原始文本；复制格式选 **复制 Markdown**（原文）或 **复制纯文本**（去 Markdown 格式）。普通文本可点“按 Markdown 预览”并持久化类型 |
-| 内容小窗 | 点击“小窗”或托盘菜单打开；只显示内容。单击或 Enter 复制，成功后隐藏；MD 右键可选择复制格式；滚动到底部增量加载 |
+| HTML / 更多语言 | HTML 静态渲染与源码切换；支持 Python、JS、TypeScript、HTML、CSS、C、C++、C#、Java、Go、Rust、Ruby、PHP、Swift、Kotlin、Dart、PowerShell、Shell、SQL、JSON、YAML、TOML、XML、INI。预览右上可手动选择，或点“自动识别”重新识别已有记录 |
+| 内容小窗 | 点击“小窗”或托盘菜单打开；普通拖动移动、四边/四角缩放，大小位置自动保存。标题栏图钉可置顶，置顶时复制后保持显示，其他情况下复制后隐藏；齿轮菜单有独立 40–100% 透明度与玻璃开关；MD 右键复制格式与增量加载保留 |
 | Emoji | 表情页提供离线常用表情；点击或键盘 Space 复制。监听开启时保存到历史，暂停时只复制 |
 | 图片 | 本地 PNG 保存、缩略图、比例预览、原图重新复制；SHA-256 去重，删除/清理同步删除图片数据 |
 | 文件 | 只保存本地文件路径，显示统一文件图标；复制按钮复制路径文本。不会读取、上传或移动文件，也不恢复文件复制/剪切操作 |
 | 收藏/置顶 | 独立导航、重启保留；清空与自动清理保护收藏和置顶 |
 | 统计 | 新复制次数、ClipVault 复用次数、复制字符、行数、常见 Emoji、图片和文件选择次数；日期范围和确认重置 |
 | 语言/主题 | 设置中选择跟随系统、简体中文或 English，保存后立即生效；深浅主题、字号、透明度均可保存 |
-| 动效 | 页面与列表变化提供 200ms 过渡、按钮 Hover / Pressed / Focus 状态；设置“减少动态效果”，同时读取 Windows 客户区动画偏好 |
+| 动效 | 页面提供 220ms 上移+渐显过渡，列表变化提供淡入反馈；玻璃高光随指针平滑移动，无空闲刷新、按钮 Hover / Pressed / Focus 状态；设置“减少动态效果”，同时读取 Windows 客户区动画偏好 |
 
 统计从本版本启用后开始，不推算旧历史。重复复制计入次数但历史去重；暂停和被隐私过滤的内容不计数。字符数使用 Python Unicode 长度，行数使用 `splitlines()`，Emoji 计数合并常见 ZWJ、肤色和旗帜序列，但不覆盖全部 Unicode 字素。**粘贴次数不可观测**：系统剪贴板没有粘贴事件，本版不记录键盘输入，因此不把复用次数伪装成粘贴统计。统计仅存本地数字，不存事件原文。
 
@@ -49,10 +51,10 @@ Your Clipboard. Your Data. Your Control.
 | ↑ / ↓、Enter | 切换记录、复制选中内容（默认保留原始 Markdown） |
 | Esc | 隐藏快捷面板；无托盘时主窗口最小化，小窗始终隐藏 |
 | Alt+F（小窗） | 回到完整窗口 |
-| Alt+拖动（小窗） | 移动无边框小窗 |
+| 普通拖动 / 拖动边缘（小窗） | 移动 / 缩放，无需 Alt；按钮操作不会触发拖动复制 |
 | Tab / Shift+Tab、Space | 键盘访问控件与操作按钮 |
 
-设置中的“失去焦点后隐藏”用于快捷面板与小窗。正常最小化驻留托盘；关闭窗口默认隐藏到托盘，可设置关闭时退出。无托盘环境关闭主窗口会退出，避免程序无法恢复。剪贴板启动时不会读取已有内容。
+设置中的“失去焦点后隐藏”用于快捷面板与非置顶小窗；置顶小窗不会因失焦或复制自动隐藏，Esc / 关闭仍可隐藏。正常最小化驻留托盘；关闭窗口默认隐藏到托盘，可设置关闭时退出。无托盘环境关闭主窗口会退出，避免程序无法恢复。剪贴板启动时不会读取已有内容。
 
 ## 安装与源码运行
 
@@ -79,6 +81,10 @@ py -3.11 -m venv .venv
 默认过滤常见私钥、明确密码字段和 API Token，但会漏判、误判。**图片没有敏感内容识别**，路径也可能泄露私人信息；可在设置关闭图片/文件记录，复制保密资料前暂停。全部历史与图片未加密；SQLite `secure_delete` 和清空后的 WAL checkpoint 不保证 SSD、备份或快照安全擦除。
 
 自动清理可选永不、7/30/90 天及普通记录数量上限，收藏/置顶受保护；删除单条或确认清空普通历史会同步移除关联图片。大量图片可明显增加磁盘占用，按需调整保留策略。统计单独确认重置。
+
+HTML 使用 Qt 富文本进行本地静态预览，不是完整浏览器：不执行 JavaScript，拒绝外部资源和跳转，支持常用文字/颜色/表格，Flex/Grid、网页动画和交互不支持。新语言仍采用保守特征识别，歧义片段可手动指定；不会宣称自动识别全部语言。
+
+Windows 11 框架通过文档化 DWM API 请求深色标题栏、系统圆角、Mica/Acrylic；玻璃小窗还绘制半透明层、柔和光晕和反射边框。**Windows 11 原生模糊视觉尚待实机验证**，其他系统使用半透明外观回退；此效果不是 Apple 液态玻璃的光学折射实现。窗口绘制及滑动动效真实运行，减少动效时禁用页面滑动和指针高光动画。
 
 核心无网络请求、账户、遥测或同步。Markdown 不加载网络、本地、相对或 data 图片，不打开链接，内嵌 HTML 禁用；“在浏览器中打开”只对用户主动选择的 HTTP(S) URL 调用默认浏览器。不会执行剪贴板代码或把原文写入日志/异常。
 
@@ -110,7 +116,7 @@ python -m clipvault --smoke-test
 python scripts/capture_screenshots.py --offscreen
 ```
 
-当前本地测试：**123 passed / 3 skipped**，跳过真实 Windows 桌面测试。原生验证请阅读 [清单](docs/WINDOWS_CHECKLIST.md)，设置 `QT_QPA_PLATFORM=windows`、`CLIPVAULT_DESKTOP_TESTS=1` 后运行对应测试。CI 在 Ubuntu Python 3.11 / 3.12 执行检查，在 Windows 构建并验证 onedir、上传完整产物；不假定 Runner 具备真实交互桌面。结果以 [验证记录](docs/VALIDATION.md) 和实际 Actions 为准。
+当前本地测试：**158 passed / 3 skipped**，跳过真实 Windows 桌面测试。原生验证请阅读 [清单](docs/WINDOWS_CHECKLIST.md)，设置 `QT_QPA_PLATFORM=windows`、`CLIPVAULT_DESKTOP_TESTS=1` 后运行对应测试。CI 在 Ubuntu Python 3.11 / 3.12 执行检查，在 Windows 构建并验证 onedir、上传完整产物；不假定 Runner 具备真实交互桌面。结果以 [验证记录](docs/VALIDATION.md) 和实际 Actions 为准。
 
 ## 贡献与许可
 
