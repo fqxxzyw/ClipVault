@@ -1,6 +1,9 @@
 """Local aggregate statistics and an accessible, offline emoji picker."""
 
-from PySide6.QtCore import Signal
+import unicodedata
+
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFont, QFontDatabase, QFontMetrics
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -95,6 +98,22 @@ class StatisticsPage(QWidget):
             widget.setText(f"{values.get(key, 0):,}")
 
 
+def emoji_glyphs_available(text, family):
+    # DejaVu has a few smileys, but symbol coverage does not imply emoji presentation.
+    if family == "DejaVu Sans" and any(
+        not (0x1F600 <= ord(char) <= 0x1F64F or char == "❤")
+        for char in text
+        if unicodedata.category(char) not in {"Cf", "Mn"}
+    ):
+        return False
+    metrics = QFontMetrics(QFont(family, 18))
+    return all(
+        metrics.inFontUcs4(ord(char))
+        for char in text
+        if unicodedata.category(char) not in {"Cf", "Mn"}
+    )
+
+
 class EmojiPage(QWidget):
     copy_requested = Signal(str)
 
@@ -110,12 +129,45 @@ class EmojiPage(QWidget):
         grid = QGridLayout(panel)
         grid.setSpacing(8)
         self.buttons = []
+        families = set(QFontDatabase.families())
+        self.emoji_font = next(
+            (
+                font
+                for font in (
+                    "Segoe UI Emoji",
+                    "Noto Color Emoji",
+                    "Noto Emoji",
+                    "Apple Color Emoji",
+                    "DejaVu Sans",
+                )
+                if font in families
+            ),
+            "Segoe UI",
+        )
         for i, (emoji, name) in enumerate(EMOJI):
             button = QPushButton(emoji)
             button.setProperty("i18nSkip", True)
             button.setMinimumSize(48, 48)
+            button._emoji = emoji
+            button._emoji_supported = emoji_glyphs_available(emoji, self.emoji_font)
+            display = emoji
+            if self.emoji_font not in {"Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji"}:
+                display = display.replace("\ufe0f", "\ufe0e")
+                if len(display) == 1:
+                    display += "\ufe0e"
             button.setStyleSheet(
-                "font-family: 'Segoe UI Emoji', 'Noto Color Emoji', 'Noto Emoji'; font-size: 23px;"
+                f"font-family: '{self.emoji_font}'; font-size: 23px;"
+                if button._emoji_supported
+                else "font-size: 12px;"
+            )
+            button.setText(
+                display
+                if button._emoji_supported
+                else QFontMetrics(QFont("Segoe UI", 10)).elidedText(
+                    tr(name),
+                    Qt.TextElideMode.ElideRight,
+                    52,
+                )
             )
             button.setToolTip(tr(name))
             button.setAccessibleName(tr(name))
@@ -130,5 +182,11 @@ class EmojiPage(QWidget):
     def retranslate(self):
         translate_widgets(self)
         for button, name in self.buttons:
+            if not button._emoji_supported:
+                button.setText(
+                    QFontMetrics(QFont("Segoe UI", 10)).elidedText(
+                        tr(name), Qt.TextElideMode.ElideRight, 52
+                    )
+                )
             button.setToolTip(tr(name))
             button.setAccessibleName(tr(name))

@@ -84,7 +84,7 @@ py -3.11 -m venv .venv
 
 中文短关键词和特殊字符采用参数化 LIKE 回退，会扫描历史；默认普通记录上限 5,000，几十万条记录的中文子串查询不承诺即时。英文较长关键词可走 FTS5 trigram 候选查询，再按字面验证。数据库、分类、PNG 编码和统计在独立 Qt 工作线程，主线程通过信号接收结果；搜索防抖 180ms、分页 50 条。
 
-真实 Windows 10/11 监听、系统图片/文件 MIME、物理快捷键、托盘、多显示器/DPI、开机启动与系统减少动效偏好仍需实机验证。Linux offscreen 集成测试不能替代它们。表情的呈现依赖系统字体；Windows 使用 Segoe UI Emoji。Linux 图形桌面并非正式支持目标。
+真实 Windows 10/11 监听、系统图片/文件 MIME、物理快捷键、托盘、多显示器/DPI、开机启动与系统减少动效偏好仍需实机验证。Linux offscreen 集成测试不能替代它们。表情的呈现依赖系统字体；Windows 使用 Segoe UI Emoji。缺少字形时显示可识别的名称，复制的仍是原始表情。Linux 图形桌面并非正式支持目标。
 
 ## EXE 打包
 
@@ -110,7 +110,7 @@ python -m clipvault --smoke-test
 python scripts/capture_screenshots.py --offscreen
 ```
 
-当前本地测试：**122 passed / 3 skipped**，跳过真实 Windows 桌面测试。原生验证请阅读 [清单](docs/WINDOWS_CHECKLIST.md)，设置 `QT_QPA_PLATFORM=windows`、`CLIPVAULT_DESKTOP_TESTS=1` 后运行对应测试。CI 在 Ubuntu Python 3.11 / 3.12 执行检查，在 Windows 构建并验证 onedir、上传完整产物；不假定 Runner 具备真实交互桌面。结果以 [验证记录](docs/VALIDATION.md) 和实际 Actions 为准。
+当前本地测试：**123 passed / 3 skipped**，跳过真实 Windows 桌面测试。原生验证请阅读 [清单](docs/WINDOWS_CHECKLIST.md)，设置 `QT_QPA_PLATFORM=windows`、`CLIPVAULT_DESKTOP_TESTS=1` 后运行对应测试。CI 在 Ubuntu Python 3.11 / 3.12 执行检查，在 Windows 构建并验证 onedir、上传完整产物；不假定 Runner 具备真实交互桌面。结果以 [验证记录](docs/VALIDATION.md) 和实际 Actions 为准。
 
 ## 贡献与许可
 

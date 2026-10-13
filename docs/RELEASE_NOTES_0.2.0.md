@@ -13,6 +13,6 @@
 
 统计从本版启用后开始。粘贴事件不由系统剪贴板提供，本版不记录键盘，不编造粘贴次数。图片无敏感内容识别，复制保密内容前请暂停。
 
-本机验证：122 passed / 3 skipped，Ruff 与源码隔离启动检查通过。Windows 构建结果与下载位置更新在 README 和 VALIDATION；Windows 10/11 真实桌面验收仍未完成，因此为预览版。
+本机验证：123 passed / 3 skipped，Ruff 与源码隔离启动检查通过。Windows 构建结果与下载位置更新在 README 和 VALIDATION；Windows 10/11 真实桌面验收仍未完成，因此为预览版。
 
 完整解压 onedir ZIP，再运行 ClipVault.exe；保留 `_internal`、`licenses` 和通知文件。Actions 下载需 GitHub 登录，产物有保留期限。

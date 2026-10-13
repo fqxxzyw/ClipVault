@@ -398,3 +398,18 @@ def test_full_shortcut_dismisses_mini_and_no_tray_escape_stays_recoverable(app, 
     qtbot.keyClick(app.mini, Qt.Key.Key_Escape)
     qtbot.waitUntil(lambda: app.window.isMinimized())
     assert not app.mini.isVisible()
+
+
+def test_emoji_missing_font_fallback_keeps_original_copy(qapp, qtbot, monkeypatch):
+    from clipvault.ui import tools_pages
+
+    monkeypatch.setattr(tools_pages, "emoji_glyphs_available", lambda *args: False)
+    page = tools_pages.EmojiPage()
+    qtbot.addWidget(page)
+    page.show()
+    copied = []
+    page.copy_requested.connect(copied.append)
+    button, name = page.buttons[0]
+    assert button.text() != "😀" and button.accessibleName() == tr(name)
+    qtbot.mouseClick(button, Qt.MouseButton.LeftButton)
+    assert copied == ["😀"]

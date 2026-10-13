@@ -4,7 +4,7 @@
 
 ## 已完成
 
-- pytest：**122 passed，3 skipped，0 failed**；完整测试结果生成于隔离检查目录。
+- pytest：**123 passed，3 skipped，0 failed**；完整测试结果生成于隔离检查目录。
 - Ruff 规则和格式检查通过。
 - 源码隔离启动检查退出码 0；验证窗口、资源、SQLite、Pygments、Markdown 转换、PNG 编码/读取与干净退出，不读取真实剪贴板。
 - 9 张真实 Qt 窗口截图：英文深/浅色、中文设置、Markdown、小窗、图片、文件路径、统计和 Emoji。仅公开合成样例；使用临时数据库与示例路径。

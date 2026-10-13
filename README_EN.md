@@ -85,7 +85,7 @@ No core network requests, accounts or telemetry. Markdown denies network, local,
 
 Chinese short/special searches use parameterized LIKE and may scan history. The default ordinary-history limit is 5,000; immediate queries over hundreds of thousands of clips are not promised. Longer ASCII terms can use FTS5 trigram candidates plus literal validation. Database/classification/PNG work is serialized in a QThread; UI results use signals, 180ms search debounce and 50-row pages.
 
-Native Windows clipboard image/file MIME, physical keyboard, tray, startup, displays/DPI and reduced-motion behavior still need desktop checks. Linux offscreen tests cannot replace them. Emoji appearance depends on OS fonts (Segoe UI Emoji on Windows). Linux graphical desktop support is not a release target.
+Native Windows clipboard image/file MIME, physical keyboard, tray, startup, displays/DPI and reduced-motion behavior still need desktop checks. Linux offscreen tests cannot replace them. Emoji appearance depends on OS fonts (Segoe UI Emoji on Windows); missing glyphs fall back to readable names while copying the original emoji. Linux graphical desktop support is not a release target.
 
 ## Build an EXE
 
@@ -111,7 +111,7 @@ python -m clipvault --smoke-test
 python scripts/capture_screenshots.py --offscreen
 ```
 
-Local result: **122 passed / 3 skipped**, the latter are opt-in Windows desktop tests. Use the [checklist](docs/WINDOWS_CHECKLIST.md), `QT_QPA_PLATFORM=windows` and `CLIPVAULT_DESKTOP_TESTS=1` for native checks. CI checks Ubuntu Python 3.11/3.12 and builds/smokes/uploads the Windows onedir bundle. It does not assume an interactive runner. See [validation](docs/VALIDATION.md) and actual Actions.
+Local result: **123 passed / 3 skipped**, the latter are opt-in Windows desktop tests. Use the [checklist](docs/WINDOWS_CHECKLIST.md), `QT_QPA_PLATFORM=windows` and `CLIPVAULT_DESKTOP_TESTS=1` for native checks. CI checks Ubuntu Python 3.11/3.12 and builds/smokes/uploads the Windows onedir bundle. It does not assume an interactive runner. See [validation](docs/VALIDATION.md) and actual Actions.
 
 ## Contribute and license
 
