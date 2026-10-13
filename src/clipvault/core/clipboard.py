@@ -6,7 +6,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Protocol
 
-from PySide6.QtCore import QMimeData, QObject, QTimer, Signal
+from PySide6.QtCore import QDir, QMimeData, QObject, QTimer, Signal
 from PySide6.QtGui import QClipboard, QGuiApplication, QImage
 
 from clipvault.database.models import MAX_TEXT_LENGTH, utc_now
@@ -144,7 +144,9 @@ class QtClipboardBackend:
             return text_result
         if bytes(mime.data(INTERNAL_MIME)) == self.source:
             return ClipboardRead(None, True)
-        paths = tuple(url.toLocalFile() for url in mime.urls() if url.isLocalFile())
+        paths = tuple(
+            QDir.toNativeSeparators(url.toLocalFile()) for url in mime.urls() if url.isLocalFile()
+        )
         if paths:
             if len(paths) > 100 or sum(map(len, paths)) > MAX_TEXT_LENGTH:
                 raise ClipboardTooLong

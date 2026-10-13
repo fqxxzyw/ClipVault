@@ -1,5 +1,6 @@
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 from PySide6.QtCore import QDate, QMimeData, Qt, QUrl
@@ -262,7 +263,7 @@ def test_file_paths_icons_and_path_copy_without_reading_files(app, qtbot, qapp, 
         )
     )
     clip = app.window.preview.clip
-    assert clip.content == "\n".join(map(str, paths))
+    assert [Path(path) for path in clip.content.splitlines()] == paths
     assert app.window.preview.files_view.count() == 2
     assert not app.window.preview.files_view.item(0).icon().isNull()
     app._copy_id(clip.id)
