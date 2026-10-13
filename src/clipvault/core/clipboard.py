@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from PySide6.QtCore import QMimeData, QObject, QTimer, Signal
-from PySide6.QtGui import QClipboard, QGuiApplication
+from PySide6.QtGui import QClipboard, QGuiApplication, QImage
 
 from clipvault.database.models import MAX_TEXT_LENGTH, utc_now
 
@@ -26,6 +26,9 @@ class ClipboardTooLong(Exception):
 class ClipboardRead:
     text: str | None
     internal: bool = False
+    kind: str = "text"
+    image: QImage | None = None
+    files: tuple[str, ...] = ()
 
 
 class ClipboardBackend(Protocol):
@@ -133,12 +136,45 @@ class QtClipboardBackend:
         if result.text != text.replace("\r\n", "\n"):
             raise ClipboardUnavailable
 
+    def read_payload(self) -> ClipboardRead:
+        # Native read checks locks even when Qt exposes stale clipboard MIME data.
+        text_result = self.read_text()
+        mime = self.clipboard.mimeData(QClipboard.Mode.Clipboard)
+        if mime is None:
+            return text_result
+        if bytes(mime.data(INTERNAL_MIME)) == self.source:
+            return ClipboardRead(None, True)
+        paths = tuple(url.toLocalFile() for url in mime.urls() if url.isLocalFile())
+        if paths:
+            if len(paths) > 100 or sum(map(len, paths)) > MAX_TEXT_LENGTH:
+                raise ClipboardTooLong
+            return ClipboardRead(None, kind="files", files=paths)
+        if mime.hasImage():
+            image = self.clipboard.image(QClipboard.Mode.Clipboard)
+            if not image.isNull():
+                if (
+                    image.width() * image.height() > 16_000_000
+                    or max(image.width(), image.height()) > 8192
+                ):
+                    raise ClipboardTooLong
+                return ClipboardRead(None, kind="image", image=image.copy())
+        return text_result
+
+    def write_image(self, image: QImage):
+        mime = QMimeData()
+        mime.setImageData(image)
+        mime.setData(INTERNAL_MIME, self.source)
+        self.clipboard.setMimeData(mime, QClipboard.Mode.Clipboard)
+        if self.clipboard.image(QClipboard.Mode.Clipboard) != image:
+            raise ClipboardUnavailable
+
 
 class ClipboardMonitor(QObject):
     captured = Signal(str, str)
     status_changed = Signal(str)
     skipped = Signal(str)
     copied = Signal(int)
+    rich_captured = Signal(object, str)
 
     def __init__(self, backend: ClipboardBackend, clipboard: QClipboard | None = None, parent=None):
         super().__init__(parent)
@@ -165,7 +201,8 @@ class ClipboardMonitor(QObject):
         if self._stopped or self.paused or generation != self._generation:
             return
         try:
-            result = self.backend.read_text()
+            reader = getattr(self.backend, "read_payload", self.backend.read_text)
+            result = reader()
         except ClipboardTooLong:
             self.skipped.emit("too_long")
             return
@@ -179,18 +216,28 @@ class ClipboardMonitor(QObject):
                 self.status_changed.emit("unavailable")
             return
         self.status_changed.emit("listening")
-        if result.text is not None and not result.internal:
-            self.captured.emit(result.text, timestamp)
+        if not result.internal:
+            if result.kind in {"image", "files"}:
+                self.rich_captured.emit(result, timestamp)
+            elif result.text is not None:
+                self.captured.emit(result.text, timestamp)
 
     def copy(self, text: str, clip_id: int) -> None:
         self._write_generation += 1
         self._write(text, clip_id, self._write_generation, 0)
 
+    def copy_image(self, image: QImage, clip_id: int):
+        self._write_generation += 1
+        self._write(image, clip_id, self._write_generation, 0)
+
     def _write(self, text: str, clip_id: int, generation: int, attempt: int) -> None:
         if self._stopped or generation != self._write_generation:
             return
         try:
-            self.backend.write_text(text)
+            if isinstance(text, QImage):
+                self.backend.write_image(text)
+            else:
+                self.backend.write_text(text)
         except (ClipboardUnavailable, RuntimeError, OSError):
             if attempt < 5:
                 QTimer.singleShot(

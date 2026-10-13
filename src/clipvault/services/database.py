@@ -1,14 +1,28 @@
 """Serialized database work in a QThread; all UI callbacks are queued signals."""
 
+import hashlib
+import json
 import sqlite3
 from pathlib import Path
 
-from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal, Slot
+from PySide6.QtCore import (
+    QBuffer,
+    QByteArray,
+    QIODevice,
+    QObject,
+    Qt,
+    QThread,
+    QTimer,
+    Signal,
+    Slot,
+)
+from PySide6.QtGui import QImage
 
 from clipvault.core.classifier import format_json
 from clipvault.core.privacy import validate_capture
 from clipvault.database.repository import Repository
 from clipvault.services.cleanup import cleanup_history
+from clipvault.services.markdown import markdown_plain_text
 from clipvault.services.preview import render_preview
 from clipvault.utils.settings import Settings
 
@@ -52,10 +66,74 @@ class DatabaseWorker(QObject):
                     )
                     if decision.allowed:
                         clip = repo.upsert(text, timestamp)
+                        repo.record_stat(text)
                         cleanup_history(repo, self.settings)
                         value = {"clip_id": clip.id, "reason": ""}
                     else:
                         value = {"clip_id": None, "reason": decision.reason}
+                elif name == "capture_rich":
+                    rich, timestamp = payload
+                    if (
+                        self.settings.paused
+                        or (rich.kind == "image" and not self.settings.capture_images)
+                        or (rich.kind == "files" and not self.settings.capture_files)
+                    ):
+                        value = {"clip_id": None, "reason": "paused"}
+                    else:
+                        png = None
+                        thumbnail = b""
+                        if rich.kind == "image":
+                            if (
+                                rich.image is None
+                                or rich.image.isNull()
+                                or rich.image.width() * rich.image.height() > 16_000_000
+                                or max(rich.image.width(), rich.image.height()) > 8192
+                            ):
+                                raise ValueError("Image dimensions exceed limit")
+                            data = QByteArray()
+                            buffer = QBuffer(data)
+                            buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+                            if not rich.image.save(buffer, "PNG"):
+                                raise ValueError("Image encoding failed")
+                            png = bytes(data)
+                            buffer.close()
+                            if len(png) > 8 * 1024 * 1024:
+                                value = {"clip_id": None, "reason": "image_too_large"}
+                                self.result.emit(job_id, name, value)
+                                return
+                            content = f"{rich.image.width()} × {rich.image.height()} · PNG"
+                            digest = hashlib.sha256(b"image\0" + png).hexdigest()
+                            thumb = rich.image.scaled(
+                                96,
+                                96,
+                                Qt.AspectRatioMode.KeepAspectRatio,
+                                Qt.TransformationMode.SmoothTransformation,
+                            )
+                            small = QByteArray()
+                            buf = QBuffer(small)
+                            buf.open(QIODevice.OpenModeFlag.WriteOnly)
+                            thumb.save(buf, "PNG")
+                            buf.close()
+                            thumbnail = bytes(small)
+                        else:
+                            if not rich.files or len(rich.files) > 100:
+                                raise ValueError("Invalid file list")
+                            content = "\n".join(rich.files)
+                            if not validate_capture(
+                                content, filter_sensitive=self.settings.sensitive_filter
+                            ).allowed:
+                                value = {"clip_id": None, "reason": "sensitive"}
+                                self.result.emit(job_id, name, value)
+                                return
+                            digest = hashlib.sha256(
+                                b"files\0" + json.dumps(rich.files).encode()
+                            ).hexdigest()
+                        clip = repo.upsert_rich(
+                            rich.kind, content, digest, png, timestamp, thumbnail
+                        )
+                        repo.record_stat(kind=rich.kind)
+                        cleanup_history(repo, self.settings)
+                        value = {"clip_id": clip.id, "reason": ""}
                 elif name == "search":
                     value = repo.search(payload)
                 elif name in {"get", "preview"}:
@@ -72,9 +150,12 @@ class DatabaseWorker(QObject):
                                     self.settings.theme,
                                     self.settings.font_size,
                                 ),
+                                QImage.fromData(repo.image_data(clip.id) or b"", "PNG")
+                                if clip.content_type == "image"
+                                else None,
                             )
                             if clip
-                            else (None, "")
+                            else (None, "", None)
                         )
                 elif name == "flag":
                     value = repo.set_flag(*payload)
@@ -82,6 +163,7 @@ class DatabaseWorker(QObject):
                     value = repo.delete(payload)
                 elif name == "touch":
                     value = repo.touch(payload)
+                    repo.record_stat(reuse=True)
                 elif name == "cleanup":
                     value = cleanup_history(repo, self.settings)
                 elif name == "clear":
@@ -89,6 +171,21 @@ class DatabaseWorker(QObject):
                 elif name == "format":
                     clip = repo.get(payload)
                     value = (clip.id, format_json(clip.content)) if clip else None
+                elif name == "markdown_plain":
+                    clip = repo.get(payload)
+                    value = (
+                        (clip.id, markdown_plain_text(clip.content))
+                        if clip and clip.content_type == "markdown"
+                        else None
+                    )
+                elif name == "mark_markdown":
+                    value = repo.mark_markdown(payload)
+                elif name == "get_image":
+                    value = (payload, QImage.fromData(repo.image_data(payload) or b"", "PNG"))
+                elif name == "stats":
+                    value = repo.statistics(*payload)
+                elif name == "reset_stats":
+                    value = repo.reset_statistics()
                 else:
                     raise ValueError("Unknown operation")
             self.result.emit(job_id, name, value)

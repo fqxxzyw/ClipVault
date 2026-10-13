@@ -5,6 +5,8 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QStyle, QStyledItemDelegate
 
 from clipvault.database.models import TYPE_LABELS, ClipSummary
+from clipvault.ui.i18n import tr
+from clipvault.ui.icons import icon, thumbnail_icon
 from clipvault.ui.styles import PALETTES, TYPE_COLORS
 
 
@@ -13,11 +15,11 @@ def relative_time(timestamp: str) -> str:
         date = datetime.fromisoformat(timestamp)
         age = max((datetime.now(date.tzinfo) - date).total_seconds(), 0)
         if age < 60:
-            return "Just now"
+            return tr("Just now")
         if age < 3600:
-            return f"{int(age // 60)}m ago"
+            return tr("{count}m ago", count=int(age // 60))
         if age < 86400:
-            return f"{int(age // 3600)}h ago"
+            return tr("{count}h ago", count=int(age // 3600))
         return date.astimezone().strftime("%m/%d %H:%M")
     except ValueError:
         return ""
@@ -41,7 +43,7 @@ class ClipListModel(QAbstractListModel):
         if role == Qt.ItemDataRole.UserRole:
             return item
         if role == Qt.ItemDataRole.AccessibleTextRole:
-            return f"{TYPE_LABELS[item.content_type]}: {item.preview}"
+            return f"{tr(TYPE_LABELS[item.content_type])}: {item.preview}"
         return None
 
     def replace(self, items):
@@ -89,9 +91,9 @@ class ClipCardDelegate(QStyledItemDelegate):
         font.setBold(True)
         painter.setFont(font)
         painter.setPen(QColor(TYPE_COLORS[item.content_type]))
-        tag = TYPE_LABELS[item.content_type].upper()
+        tag = tr(TYPE_LABELS[item.content_type]).upper()
         if item.is_pinned:
-            tag += "  · PINNED"
+            tag += "  · " + tr("Pinned").upper()
         if item.is_favorite:
             tag += "  ★"
         painter.drawText(QRectF(left, top, width, 16), Qt.AlignmentFlag.AlignLeft, tag)
@@ -99,6 +101,15 @@ class ClipCardDelegate(QStyledItemDelegate):
         font.setPixelSize(self.font_size)
         painter.setFont(font)
         painter.setPen(QColor(colors["text"]))
+        if item.content_type in {"image", "files"}:
+            glyph = (
+                thumbnail_icon(item.thumbnail)
+                if item.thumbnail
+                else icon("file" if item.content_type == "files" else "image")
+            )
+            glyph.paint(painter, int(left), int(top + 23), 42, 42)
+            left += 53
+            width -= 53
         lines = item.preview.replace("\r", "").splitlines() or [""]
         first = lines[0].strip() or "…"
         second = next((line.strip() for line in lines[1:] if line.strip()), "")
@@ -119,9 +130,12 @@ class ClipCardDelegate(QStyledItemDelegate):
         )
         font.setPixelSize(10)
         painter.setFont(font)
+        footer = relative_time(item.updated_at)
+        if item.content_type not in {"image", "files"}:
+            footer += "  ·  " + tr("{count:,} characters", count=item.char_count)
         painter.drawText(
             QRectF(left, rect.bottom() - 22, width, 14),
             Qt.AlignmentFlag.AlignLeft,
-            f"{relative_time(item.updated_at)}  ·  {item.char_count:,} characters",
+            footer,
         )
         painter.restore()

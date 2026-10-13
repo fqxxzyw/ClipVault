@@ -41,6 +41,14 @@ class SettingsPage(QWidget):
         self.theme = QComboBox()
         self.theme.addItem("Dark", "dark")
         self.theme.addItem("Light", "light")
+        self.language = QComboBox()
+        self.language.addItem("Follow system", "system")
+        self.language.addItem("简体中文", "zh_CN")
+        self.language.addItem("English", "en")
+        self.reduce_motion = QCheckBox("Reduce motion (also respects Windows animation settings)")
+        self.shortcut_panel = QComboBox()
+        self.shortcut_panel.addItem("Full window", "full")
+        self.shortcut_panel.addItem("Mini window", "compact")
         self.font_size = QSpinBox()
         self.font_size.setRange(11, 20)
         self.font_size.setSuffix(" px")
@@ -53,10 +61,12 @@ class SettingsPage(QWidget):
             "Appearance",
             [
                 ("Theme", self.theme),
+                ("Language", self.language),
                 ("Font size", self.font_size),
                 ("Window opacity", self.opacity),
                 ("", self.notifications),
                 ("", self.auto_hide),
+                ("", self.reduce_motion),
             ],
         )
         layout.addWidget(appearance)
@@ -75,6 +85,7 @@ class SettingsPage(QWidget):
                 "Shortcuts & startup",
                 [
                     ("Global shortcut", self.hotkey),
+                    ("Shortcut opens", self.shortcut_panel),
                     ("", self.startup),
                     ("", self.quit_on_close),
                 ],
@@ -88,6 +99,8 @@ class SettingsPage(QWidget):
         for days in (0, 7, 30, 90):
             self.retention.addItem("Never" if days == 0 else f"{days} days", days)
         self.sensitive = QCheckBox("Skip recognizable passwords, private keys and API tokens")
+        self.capture_images = QCheckBox("Save copied images locally (no sensitive-image detection)")
+        self.capture_files = QCheckBox("Record copied file paths only; never read file contents")
         layout.addWidget(
             self._section(
                 "Privacy & history",
@@ -95,6 +108,8 @@ class SettingsPage(QWidget):
                     ("Ordinary clip limit", self.max_history),
                     ("Auto cleanup", self.retention),
                     ("", self.sensitive),
+                    ("", self.capture_images),
+                    ("", self.capture_files),
                 ],
             )
         )
@@ -147,6 +162,7 @@ class SettingsPage(QWidget):
         form = QFormLayout()
         form.setHorizontalSpacing(25)
         form.setVerticalSpacing(12)
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         for text, widget in rows:
             if text:
                 form.addRow(text, widget)
@@ -158,6 +174,9 @@ class SettingsPage(QWidget):
     def populate(self, settings: Settings):
         self.current = settings
         self.theme.setCurrentIndex(self.theme.findData(settings.theme))
+        self.language.setCurrentIndex(self.language.findData(settings.language))
+        self.shortcut_panel.setCurrentIndex(self.shortcut_panel.findData(settings.shortcut_panel))
+        self.reduce_motion.setChecked(settings.reduce_motion)
         self.font_size.setValue(settings.font_size)
         self.opacity.setValue(settings.opacity)
         self.hotkey.setText(settings.hotkey)
@@ -169,6 +188,8 @@ class SettingsPage(QWidget):
             (self.startup, settings.start_at_login),
             (self.quit_on_close, settings.quit_on_close),
             (self.sensitive, settings.sensitive_filter),
+            (self.capture_images, settings.capture_images),
+            (self.capture_files, settings.capture_files),
         ):
             checkbox.setChecked(value)
 
@@ -177,12 +198,17 @@ class SettingsPage(QWidget):
             replace(
                 self.current,
                 theme=self.theme.currentData(),
+                language=self.language.currentData(),
+                reduce_motion=self.reduce_motion.isChecked(),
+                shortcut_panel=self.shortcut_panel.currentData(),
                 font_size=self.font_size.value(),
                 opacity=self.opacity.value(),
                 hotkey=self.hotkey.text().strip(),
                 max_history=self.max_history.value(),
                 retention_days=self.retention.currentData(),
                 sensitive_filter=self.sensitive.isChecked(),
+                capture_images=self.capture_images.isChecked(),
+                capture_files=self.capture_files.isChecked(),
                 copy_notification=self.notifications.isChecked(),
                 auto_hide=self.auto_hide.isChecked(),
                 start_at_login=self.startup.isChecked(),

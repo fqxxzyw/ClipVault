@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QMessageBox
 
 from clipvault.app import ClipVaultApplication
 from clipvault.database.models import utc_now
+from clipvault.ui.i18n import tr
 from clipvault.utils.settings import SettingsError
 
 
@@ -61,7 +62,12 @@ def test_pause_privacy_and_duplicate_capture(controller, qtbot, qapp):
     qtbot.wait(220)
     assert len(c.window.model.items) == 1
     qapp.clipboard().setText("password=never_store_this")
-    qtbot.waitUntil(lambda: "敏感" in c.window.notice.text())
+    qtbot.waitUntil(
+        lambda: (
+            c.window.notice.text()
+            == tr("Privacy filter: potentially sensitive content was not saved.")
+        )
+    )
     assert len(c.window.model.items) == 1
 
 
@@ -171,6 +177,11 @@ def test_capture_does_not_write_clipboard_text_to_errors(controller, qtbot):
     errors = []
     c.database.error.connect(lambda job, name, message: errors.append(message))
     c.database.submit("capture", ("INVALID\ud800PRIVATE", utc_now()))
-    qtbot.waitUntil(lambda: "无效" in c.window.notice.text())
+    qtbot.waitUntil(
+        lambda: (
+            c.window.notice.text()
+            == tr("Content is too long or contains invalid characters and was not saved.")
+        )
+    )
     assert not errors
     assert not c.window.model.items

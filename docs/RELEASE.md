@@ -1,26 +1,14 @@
 # GitHub 发布步骤
 
-公开源码仓库：[fqxxzyw/ClipVault](https://github.com/fqxxzyw/ClipVault)，于 2026-10-11 创建。Windows 桌面验收尚未完成；二进制正式发布前按以下步骤验证。远程构建状态以 [Actions](https://github.com/fqxxzyw/ClipVault/actions) 实际运行记录为准。
+公开仓库：[fqxxzyw/ClipVault](https://github.com/fqxxzyw/ClipVault)。现有预览：[Releases](https://github.com/fqxxzyw/ClipVault/releases)。0.2.0 源码提供新语言、Markdown、小窗和富内容功能；早期 0.1.0 二进制不包含本次更新。
 
-当前预览发布：`v0.1.0-preview.1`，见 [Releases](https://github.com/fqxxzyw/ClipVault/releases)。Windows ZIP 的下载入口指向已验证的 Actions artifact，校验值写在发布说明中，尚未上传 Release 附件。CI 构建及隔离启动检查通过，真实 Windows 桌面验收仍待完成；预览版标记为 Pre-release。不要将它描述为已经完成 Windows 10/11 实机认证。
+1. 用临时数据完成 Ruff、pytest、源码 smoke 和 [Windows 桌面清单](WINDOWS_CHECKLIST.md)，明确记录未验证项。
+2. 提交功能和真实截图，查看现有 `Test and build ClipVault` CI。工作流仅 `contents: read`；上传完整 onedir artifact，不写 Release 或变更仓库权限。
+3. Windows 构建与打包 smoke 通过后下载完整 `ClipVault-windows-x64-onedir`，验证 SHA-256、ZIP CRC、Qt 插件、图标与许可证。检查没有用户历史、设置、照片、私人路径或密钥。
+4. 在普通用户 Windows 10/11 登录桌面测试打包程序。不把 CI/offscreen 结果称为实机验收。
+5. 为当前源码创建 `v0.2.0-preview.1` 标签和 GitHub Pre-release，使用 [发布说明](RELEASE_NOTES_0.2.0.md) 并记录实际提交/CI/下载链接及校验值。尚未上传 Release 附件时明确注明 artifact 下载需要登录和有保留期限。
+6. 手动上传完整 ZIP、SHA256 和验证记录时，不要只上传 EXE。打包包含 `_internal`、`licenses`、MIT 与第三方声明。
 
-1. 在 Windows 10/11 桌面按 `WINDOWS_CHECKLIST.md` 实测并记录结果。
-2. 运行 Ruff、pytest、`scripts/build.py`、`scripts/smoke_bundle.py`，再实际运行打包软件。
-3. 检查不含真实数据库、配置、缓存、密钥、个人信息；本项目的 `.gitignore` 已排除这些文件。
-4. 本仓库已设置公开可见、项目描述及 Topics。若发布自己的 Fork，可使用下方命令创建独立远程仓库；维护本仓库则直接克隆并提交功能分支。
-5. ZIP 不包含 Git 元数据，以下命令仅用于从 ZIP 建立自己的新仓库；不要对已有远程历史强制推送。
+源码运行/构建命令见中英文 README。可用 PowerShell `Get-FileHash .\ClipVault-0.2.0-preview.1-windows-x64.zip -Algorithm SHA256` 校验下载文件。
 
-```powershell
-git init -b main
-git add .
-git commit -m "Initial ClipVault implementation"
-git remote add origin https://github.com/YOUR_ACCOUNT/ClipVault.git
-git push -u origin main
-```
-
-6. 在 Actions 查看 `Test and build ClipVault`。工作流成功后下载完整 `ClipVault-windows-x64-onedir`，在普通用户 Windows 桌面再验证启动、复制、快捷键、托盘、退出。
-7. 将完整 `dist/ClipVault` 目录压缩为 `ClipVault-0.1.0-windows-x64.zip`，保留 `_internal`、许可证和通知；不要只发布 EXE。
-8. 生成 SHA-256：`Get-FileHash .\ClipVault-0.1.0-windows-x64.zip -Algorithm SHA256`。
-9. 创建 `v0.1.0` 标签并推送，建立 GitHub Release，上传 ZIP、SHA256、验证记录。未验证项明确写出，不编造下载量或兼容性认证。
-
-构建默认不请求管理员权限，也不自动修改远程仓库。发布前检查 Qt/Pygments 许可证随包保留情况。当前没有代码签名证书；是否签名由维护者决定。
+发布自己的 Fork 请自行创建远程并正常推送；已有仓库不要重写或强制覆盖历史。当前没有签名证书，onefile 和真实 Windows 10/11 验收仍须单独完成。

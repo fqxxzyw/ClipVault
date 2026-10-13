@@ -11,6 +11,11 @@ class SettingsError(Exception):
 @dataclass(frozen=True, slots=True)
 class Settings:
     theme: str = "dark"
+    language: str = "system"
+    reduce_motion: bool = False
+    shortcut_panel: str = "full"
+    capture_images: bool = True
+    capture_files: bool = True
     hotkey: str = "Ctrl+Shift+V"
     max_history: int = 5000
     retention_days: int = 30
@@ -28,6 +33,10 @@ class Settings:
 
         if self.theme not in {"dark", "light"}:
             raise SettingsError("Unsupported theme")
+        if self.language not in {"system", "zh_CN", "en"}:
+            raise SettingsError("Unsupported language")
+        if self.shortcut_panel not in {"full", "compact"}:
+            raise SettingsError("Unsupported shortcut panel")
         for field, minimum, maximum in (
             ("max_history", 100, 100_000),
             ("opacity", 65, 100),
@@ -51,6 +60,9 @@ class Settings:
             "auto_hide",
             "start_at_login",
             "paused",
+            "reduce_motion",
+            "capture_images",
+            "capture_files",
         ):
             if type(getattr(self, field)) is not bool:
                 raise SettingsError("Invalid boolean setting")

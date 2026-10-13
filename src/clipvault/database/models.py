@@ -1,15 +1,29 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-CONTENT_TYPES = ("text", "url", "python", "javascript", "json", "shell", "sql")
+CONTENT_TYPES = (
+    "text",
+    "url",
+    "python",
+    "javascript",
+    "json",
+    "shell",
+    "sql",
+    "markdown",
+    "image",
+    "files",
+)
 TYPE_LABELS = {
-    "text": "Text",
+    "text": "TXT",
     "url": "URL",
     "python": "Python",
     "javascript": "JavaScript",
     "json": "JSON",
     "shell": "Shell",
     "sql": "SQL",
+    "markdown": "Markdown",
+    "image": "Image",
+    "files": "Files",
 }
 MAX_TEXT_LENGTH = 100_000
 PAGE_SIZE = 50
@@ -47,6 +61,7 @@ class ClipSummary:
     char_count: int
     is_favorite: bool
     is_pinned: bool
+    thumbnail: bytes | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +72,8 @@ class SearchRequest:
     newest_first: bool = True
     offset: int = 0
     limit: int = PAGE_SIZE
+    date_from: str = ""
+    date_to: str = ""
 
 
 @dataclass(frozen=True, slots=True)

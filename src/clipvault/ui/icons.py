@@ -5,6 +5,11 @@ from PySide6.QtGui import QIcon, QImage, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
 PATHS = {
+    "file": '<path d="M6 2h8l4 4v16H6ZM14 2v5h4M9 12h6M9 16h6"/>',
+    "image": '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="2"/><path d="m3 18 6-6 4 4 4-6 4 7"/>',
+    "stats": '<path d="M4 20h17M7 20V10h3v10M13 20V4h3v16M19 20v-7"/>',
+    "emoji": '<circle cx="12" cy="12" r="9"/><path d="M7 14c3 4 7 4 10 0M8 8v2m8-2v2"/>',
+    "mini": '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M13 13h5v4h-5Z"/>',
     "clipboard": '<rect x="5" y="5" width="14" height="16" rx="3"/><rect x="8" y="3" width="8" height="4" rx="2"/><path d="M9 11h6m-6 4h4"/>',
     "star": '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/>',
     "pin": '<path d="m9 3 6 0-1 6 4 4v2H6v-2l4-4ZM12 15v7"/>',
@@ -43,3 +48,8 @@ def icon(name: str, color: str = "#aab8ce", size: int = 24) -> QIcon:
     pixmap = QPixmap.fromImage(image)
     pixmap.setDevicePixelRatio(2)
     return QIcon(pixmap)
+
+
+@lru_cache(maxsize=128)
+def thumbnail_icon(data: bytes) -> QIcon:
+    return QIcon(QPixmap.fromImage(QImage.fromData(data, "PNG")))

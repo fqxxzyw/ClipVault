@@ -27,6 +27,7 @@ class Repository:
         try:
             self.connection.row_factory = sqlite3.Row
             self.connection.execute(f"PRAGMA busy_timeout = {int(busy_timeout_ms)}")
+            self.connection.execute("PRAGMA foreign_keys = ON")
             self.connection.execute("PRAGMA journal_mode = WAL")
             self.connection.execute("PRAGMA synchronous = NORMAL")
             self.connection.execute("PRAGMA secure_delete = ON")
@@ -77,6 +78,14 @@ class Repository:
                 "UPDATE clipboard_history SET updated_at = ? WHERE id = ?", (utc_now(), clip_id)
             )
 
+    def mark_markdown(self, clip_id: int) -> None:
+        with self.connection:
+            self.connection.execute(
+                "UPDATE clipboard_history SET content_type = 'markdown' "
+                "WHERE id = ? AND content_type = 'text'",
+                (clip_id,),
+            )
+
     def delete(self, clip_id: int) -> int:
         with self.connection:
             return self.connection.execute(
@@ -87,14 +96,25 @@ class Repository:
         return self.connection.execute("SELECT COUNT(*) FROM clipboard_history").fetchone()[0]
 
     def search(self, request: SearchRequest) -> SearchPage:
-        if request.content_type not in (*CONTENT_TYPES, "all"):
+        if request.content_type not in (*CONTENT_TYPES, "all", "code"):
             raise ValueError("Unknown content type")
         if request.scope not in {"all", "favorites", "pinned"}:
             raise ValueError("Unknown scope")
         conditions, values = [], []
-        if request.content_type != "all":
+        if request.content_type == "code":
+            conditions.append("content_type IN (?, ?, ?, ?, ?)")
+            values.extend(("python", "javascript", "json", "shell", "sql"))
+        elif request.content_type != "all":
             conditions.append("content_type = ?")
             values.append(request.content_type)
+        if request.date_from:
+            datetime.fromisoformat(request.date_from)
+            conditions.append("updated_at >= ?")
+            values.append(request.date_from)
+        if request.date_to:
+            datetime.fromisoformat(request.date_to)
+            conditions.append("updated_at < ?")
+            values.append(request.date_to)
         if request.scope != "all":
             conditions.append(
                 "is_favorite = 1" if request.scope == "favorites" else "is_pinned = 1"
@@ -130,6 +150,9 @@ class Repository:
                     **dict(row),
                     "is_favorite": bool(row["is_favorite"]),
                     "is_pinned": bool(row["is_pinned"]),
+                    "thumbnail": self.thumbnail_data(row["id"])
+                    if row["content_type"] == "image"
+                    else None,
                 }
             )
             for row in rows[:limit]
@@ -167,3 +190,86 @@ class Repository:
 
     def close(self) -> None:
         self.connection.close()
+
+    def upsert_rich(
+        self, kind: str, content: str, digest: str, png: bytes | None, timestamp: str, thumbnail=b""
+    ):
+        if kind not in {"image", "files"}:
+            raise ValueError("Unsupported payload")
+        with self.connection:
+            self.connection.execute(
+                "INSERT INTO clipboard_history(content, content_hash, content_type, "
+                "created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?) ON CONFLICT(content_hash) DO UPDATE SET "
+                "updated_at = MAX(updated_at, excluded.updated_at)",
+                (content, digest, kind, timestamp, timestamp),
+            )
+            clip = Clip.from_row(
+                self.connection.execute(
+                    "SELECT * FROM clipboard_history WHERE content_hash = ?", (digest,)
+                ).fetchone()
+            )
+            if png is not None:
+                self.connection.execute(
+                    "INSERT OR IGNORE INTO clipboard_assets(clip_id, png, thumbnail) "
+                    "VALUES (?, ?, ?)",
+                    (clip.id, png, thumbnail),
+                )
+        return clip
+
+    def image_data(self, clip_id: int) -> bytes | None:
+        row = self.connection.execute(
+            "SELECT png FROM clipboard_assets WHERE clip_id = ?", (clip_id,)
+        ).fetchone()
+        return bytes(row[0]) if row else None
+
+    def thumbnail_data(self, clip_id):
+        row = self.connection.execute(
+            "SELECT thumbnail FROM clipboard_assets WHERE clip_id = ?", (clip_id,)
+        ).fetchone()
+        return bytes(row[0]) if row else None
+
+    def record_stat(self, text: str = "", *, reuse=False, kind="text", day=None):
+        from clipvault.core.emoji import emoji_count
+
+        day = day or datetime.now().date().isoformat()
+        values = (
+            int(not reuse),
+            int(reuse),
+            len(text) if not reuse and kind not in {"image", "files"} else 0,
+            len(text.splitlines()) if text and not reuse and kind not in {"image", "files"} else 0,
+            emoji_count(text) if not reuse and kind not in {"image", "files"} else 0,
+            int(not reuse and kind == "image"),
+            int(not reuse and kind == "files"),
+        )
+        with self.connection:
+            self.connection.execute(
+                "INSERT INTO daily_stats(day, captures, reuses, characters, lines, "
+                "emoji, images, files) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(day) DO UPDATE SET "
+                "captures=captures+excluded.captures, reuses=reuses+excluded.reuses, "
+                "characters=characters+excluded.characters, lines=lines+excluded.lines, "
+                "emoji=emoji+excluded.emoji, images=images+excluded.images, "
+                "files=files+excluded.files",
+                (day, *values),
+            )
+
+    def statistics(self, date_from="", date_to="") -> dict:
+        conditions, values = [], []
+        for field, value in (("day >= ?", date_from), ("day < ?", date_to)):
+            if value:
+                conditions.append(field)
+                values.append(value[:10])
+        where = " WHERE " + " AND ".join(conditions) if conditions else ""
+        row = self.connection.execute(
+            "SELECT COALESCE(SUM(captures),0) captures, COALESCE(SUM(reuses),0) reuses, "
+            "COALESCE(SUM(characters),0) characters, COALESCE(SUM(lines),0) lines, "
+            "COALESCE(SUM(emoji),0) emoji, COALESCE(SUM(images),0) images, "
+            "COALESCE(SUM(files),0) files FROM daily_stats" + where,
+            values,
+        ).fetchone()
+        return dict(row)
+
+    def reset_statistics(self):
+        with self.connection:
+            self.connection.execute("DELETE FROM daily_stats")

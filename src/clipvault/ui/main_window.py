@@ -1,9 +1,12 @@
-from PySide6.QtCore import QEvent, QSize, Qt, QTimer, Signal
+from datetime import UTC, datetime, time, timedelta
+
+from PySide6.QtCore import QDate, QEvent, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QCursor, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
     QComboBox,
+    QDateEdit,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -20,9 +23,12 @@ from PySide6.QtWidgets import (
 
 from clipvault.database.models import CONTENT_TYPES, TYPE_LABELS, SearchPage, SearchRequest
 from clipvault.ui.clip_card import ClipCardDelegate, ClipListModel
+from clipvault.ui.i18n import set_language, tr, translate_widgets
 from clipvault.ui.icons import icon
+from clipvault.ui.motion import Motion, system_reduces_motion
 from clipvault.ui.preview_panel import PreviewPanel
 from clipvault.ui.settings_page import SettingsPage
+from clipvault.ui.tools_pages import EmojiPage, StatisticsPage
 from clipvault.utils.settings import Settings
 
 
@@ -32,6 +38,7 @@ class MainWindow(QMainWindow):
     copy_requested = Signal(int)
     pause_requested = Signal()
     quit_requested = Signal()
+    mini_requested = Signal()
 
     def __init__(self, settings: Settings, parent=None):
         super().__init__(parent)
@@ -43,6 +50,10 @@ class MainWindow(QMainWindow):
         self._has_more = False
         self._selected_id: int | None = None
         self._mutating_list = False
+        self._counts = (0, 0)
+        self._listener_status = "listening"
+        self._last_clip_scope = "all"
+        self.motion = Motion(self)
         self.setWindowTitle("ClipVault — Your Clipboard. Your Control.")
         self.resize(900, 620)
         self.setMinimumSize(820, 540)
@@ -57,9 +68,10 @@ class MainWindow(QMainWindow):
         sidebar.setFixedWidth(173)
         side = QVBoxLayout(sidebar)
         side.setContentsMargins(13, 23, 13, 20)
-        side.setSpacing(7)
+        side.setSpacing(6)
         brand_row = QHBoxLayout()
         logo = QLabel()
+        logo.setFixedSize(28, 28)
         logo.setPixmap(icon("clipboard", "#89a5ff", 28).pixmap(QSize(28, 28)))
         brand = QLabel("ClipVault")
         brand.setObjectName("brand")
@@ -80,6 +92,8 @@ class MainWindow(QMainWindow):
             ("all", "All Clips", "clipboard"),
             ("favorites", "Favorites", "star"),
             ("pinned", "Pinned", "pin"),
+            ("stats", "Statistics", "stats"),
+            ("emoji", "Emoji", "emoji"),
             ("settings", "Settings", "settings"),
         ):
             button = QToolButton()
@@ -103,12 +117,12 @@ class MainWindow(QMainWindow):
         shield.setPixmap(icon("shield", "#79c8aa", 22).pixmap(QSize(22, 22)))
         privacy_layout.addWidget(shield)
         privacy_layout.addWidget(QLabel("Local by design"))
-        small = QLabel("No account. No cloud.\nJust your device.")
+        small = QLabel("Offline. On your device.")
         small.setWordWrap(True)
         small.setObjectName("muted")
         privacy_layout.addWidget(small)
         side.addWidget(privacy)
-        version = QLabel("CLIPVAULT  /  0.1.0")
+        version = QLabel("CLIPVAULT  /  0.2.0")
         version.setObjectName("eyebrow")
         version.setContentsMargins(8, 14, 0, 0)
         side.addWidget(version)
@@ -134,6 +148,11 @@ class MainWindow(QMainWindow):
         self.pause.setIcon(icon("pause"))
         self.pause.setToolTip("Pause recording before copying sensitive information")
         self.pause.clicked.connect(self.pause_requested)
+        self.mini = QPushButton("Mini window")
+        self.mini.setIcon(icon("mini"))
+        self.mini.setToolTip("Open mini window")
+        self.mini.clicked.connect(self.mini_requested)
+        top.addWidget(self.mini)
         top.addWidget(self.pause)
         body.addLayout(top)
         self.notice = QLabel()
@@ -161,6 +180,7 @@ class MainWindow(QMainWindow):
         tools.addWidget(self.search, 1)
         self.type_filter = QComboBox()
         self.type_filter.addItem("All types", "all")
+        self.type_filter.addItem("Code", "code")
         for content_type in CONTENT_TYPES:
             self.type_filter.addItem(TYPE_LABELS[content_type], content_type)
         self.type_filter.setMinimumWidth(104)
@@ -176,6 +196,37 @@ class MainWindow(QMainWindow):
         self.retry.clicked.connect(self.refresh)
         tools.addWidget(self.retry)
         clips_layout.addLayout(tools)
+        self.date_range_widget = QWidget()
+        self.date_range_widget.hide()
+        dates = QHBoxLayout(self.date_range_widget)
+        dates.setContentsMargins(0, 0, 0, 0)
+        dates.setSpacing(8)
+        self.date_filter = QComboBox()
+        for title, value in (
+            ("All dates", 0),
+            ("Today", 1),
+            ("Last 7 days", 7),
+            ("Last 30 days", 30),
+            ("Custom range", -1),
+        ):
+            self.date_filter.addItem(title, value)
+        tools.insertWidget(2, self.date_filter)
+        self.date_from = QDateEdit(QDate.currentDate().addDays(-6))
+        self.date_to = QDateEdit(QDate.currentDate())
+        for edit in (self.date_from, self.date_to):
+            edit.setCalendarPopup(True)
+            edit.setDisplayFormat("yyyy-MM-dd")
+            edit.setMaximumDate(QDate.currentDate().addYears(1))
+            edit.setMinimumDate(QDate(2000, 1, 1))
+            edit.hide()
+            dates.addWidget(edit)
+        self.date_from.setAccessibleName(tr("From"))
+        self.date_to.setAccessibleName(tr("Through"))
+        dates.addStretch()
+        clips_layout.addWidget(self.date_range_widget)
+        self.date_filter.currentIndexChanged.connect(self._dates_changed)
+        self.date_from.dateChanged.connect(lambda: self.refresh())
+        self.date_to.dateChanged.connect(lambda: self.refresh())
         splitter = QSplitter(Qt.Orientation.Horizontal)
         left = QWidget()
         left_layout = QVBoxLayout(left)
@@ -187,6 +238,7 @@ class MainWindow(QMainWindow):
         self.model = ClipListModel(self)
         self.list_view = QListView()
         self.list_view.setModel(self.model)
+        self.list_view.setAccessibleName(tr("History list"))
         self.list_view.setMouseTracking(True)
         self.list_view.setUniformItemSizes(True)
         self.list_view.setVerticalScrollMode(QListView.ScrollMode.ScrollPerPixel)
@@ -219,6 +271,10 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(clips_page)
         self.settings_page = SettingsPage(settings)
         self.stack.addWidget(self.settings_page)
+        self.statistics_page = StatisticsPage()
+        self.stack.addWidget(self.statistics_page)
+        self.emoji_page = EmojiPage()
+        self.stack.addWidget(self.emoji_page)
         body.addWidget(self.stack, 1)
         main_layout.addWidget(workspace, 1)
         self.count_label = QLabel("0 clips")
@@ -244,6 +300,42 @@ class MainWindow(QMainWindow):
 
     def apply_settings(self, settings: Settings):
         self.settings = settings
+        set_language(settings.language)
+        self.motion.configure(settings.reduce_motion)
+        for effect in (
+            Qt.UIEffect.UI_FadeMenu,
+            Qt.UIEffect.UI_AnimateCombo,
+            Qt.UIEffect.UI_FadeTooltip,
+            Qt.UIEffect.UI_AnimateToolBox,
+        ):
+            QApplication.setEffectEnabled(
+                effect, not settings.reduce_motion and not system_reduces_motion()
+            )
+        for widget in (
+            self.heading,
+            self.subtitle,
+            self.pause,
+            self.count_label,
+            self.listener_label,
+            self.hotkey_label,
+            self.results_label,
+            self.empty,
+            self.notice,
+            self.preview.special,
+        ):
+            widget.setProperty("i18nSkip", True)
+        self.type_filter.blockSignals(True)
+        translate_widgets(self)
+        self.type_filter.blockSignals(False)
+        self._translate_dynamic()
+        self.list_view.setAccessibleName(tr("History list"))
+        self.preview.browser.setAccessibleName(tr("Preview"))
+        self.preview.md_view.setAccessibleName(tr("Markdown preview mode"))
+        self.preview.md_copy.setAccessibleName(tr("Markdown copy format"))
+        self.date_from.setAccessibleName(tr("From"))
+        self.date_to.setAccessibleName(tr("Through"))
+        self.emoji_page.retranslate()
+        self.preview.set_clip(self.preview.clip, self.preview.rendered, self.preview.image)
         self.setWindowOpacity(settings.opacity / 100)
         self.delegate.theme = settings.theme
         self.delegate.font_size = settings.font_size
@@ -254,21 +346,70 @@ class MainWindow(QMainWindow):
             820 + max(settings.font_size - 13, 0) * 28, 540 + max(settings.font_size - 13, 0) * 14
         )
         self.settings_page.populate(settings)
-        self.pause.setText("Resume" if settings.paused else "Pause")
+        self.pause.setText(tr("Resume" if settings.paused else "Pause"))
+        self.pause.setAccessibleName(self.pause.text())
         self.pause.setIcon(icon("play" if settings.paused else "pause"))
         self.listener_status("paused" if settings.paused else "listening")
 
+    def _translate_dynamic(self):
+        self.heading.setText(
+            tr(
+                {
+                    "all": "Clipboard",
+                    "favorites": "Favorites",
+                    "pinned": "Pinned",
+                    "settings": "Settings",
+                    "stats": "Statistics",
+                    "emoji": "Emoji",
+                }[self.scope]
+            )
+        )
+        self.subtitle.setText(
+            tr(
+                {
+                    "all": "Capture once. Find it instantly.",
+                    "favorites": "Keep the things you reach for.",
+                    "pinned": "Your essentials, always up front.",
+                    "settings": "Make ClipVault feel like yours.",
+                    "stats": "Statistics of your local clipboard activity.",
+                    "emoji": "A little expression, ready to copy.",
+                }[self.scope]
+            )
+        )
+        self.count_label.setText(
+            tr(
+                "{total:,} clips  ·  {matching:,} matching",
+                total=self._counts[0],
+                matching=self._counts[1],
+            )
+        )
+        self.results_label.setText(
+            tr(
+                "{matching:,} CLIPS  ·  {loaded:,} LOADED",
+                matching=self._counts[1],
+                loaded=len(self.model.items),
+            )
+        )
+        self.empty.setText(
+            tr(
+                "No matches. Try another search or filter."
+                if self.search.text()
+                else "No clips here yet. Copy text or save a favorite."
+            )
+        )
+
     def listener_status(self, status: str):
+        self._listener_status = status
         labels = {
             "listening": "●  Listening",
             "paused": "Ⅱ  Recording paused",
             "retrying": "●  Clipboard busy · retrying",
             "unavailable": "●  Clipboard unavailable",
         }
-        self.listener_label.setText(labels.get(status, status))
+        self.listener_label.setText(tr(labels.get(status, status)))
 
     def notify(self, text: str, *, persistent: bool = False):
-        self.notice.setText(text)
+        self.notice.setText(tr(text))
         self.notice.show()
         self.notice_timer.stop()
         if not persistent:
@@ -277,39 +418,85 @@ class MainWindow(QMainWindow):
     def navigate(self, scope: str):
         self.debounce.stop()
         self.scope = scope
+        if scope in {"all", "favorites", "pinned"}:
+            self._last_clip_scope = scope
         self.quick_mode = False
         self.nav_buttons[scope].setChecked(True)
         self.heading.setText(
-            {
-                "all": "Clipboard",
-                "favorites": "Favorites",
-                "pinned": "Pinned",
-                "settings": "Settings",
-            }[scope]
+            tr(
+                {
+                    "all": "Clipboard",
+                    "favorites": "Favorites",
+                    "pinned": "Pinned",
+                    "settings": "Settings",
+                    "stats": "Statistics",
+                    "emoji": "Emoji",
+                }[scope]
+            )
         )
         self.subtitle.setText(
-            {
-                "all": "Capture once. Find it instantly.",
-                "favorites": "Keep the things you reach for.",
-                "pinned": "Your essentials, always up front.",
-                "settings": "Make ClipVault feel like yours.",
-            }[scope]
+            tr(
+                {
+                    "all": "Capture once. Find it instantly.",
+                    "favorites": "Keep the things you reach for.",
+                    "pinned": "Your essentials, always up front.",
+                    "settings": "Make ClipVault feel like yours.",
+                    "stats": "Statistics of your local clipboard activity.",
+                    "emoji": "A little expression, ready to copy.",
+                }[scope]
+            )
         )
-        self.stack.setCurrentIndex(1 if scope == "settings" else 0)
-        if scope != "settings":
+        self.motion.transition(
+            self.stack,
+            lambda: self.stack.setCurrentIndex(
+                {"settings": 1, "stats": 2, "emoji": 3}.get(scope, 0)
+            ),
+        )
+        if scope in {"all", "favorites", "pinned"}:
             self.refresh()
+        elif scope == "stats":
+            self.statistics_page.refresh_requested.emit()
+
+    def _dates_changed(self):
+        custom = self.date_filter.currentData() == -1
+        self.date_range_widget.setVisible(custom)
+        self.date_from.setVisible(custom)
+        self.date_to.setVisible(custom)
+        self.refresh()
+
+    def date_range(self, *, utc=True):
+        days = self.date_filter.currentData()
+        if days == 0:
+            return "", ""
+        if days == -1:
+            start = self.date_from.date().toPython()
+            end = self.date_to.date().toPython() + timedelta(days=1)
+        else:
+            end = datetime.now().date() + timedelta(days=1)
+            start = end - timedelta(days=days)
+        if not utc:
+            return start.isoformat(), end.isoformat()
+        return tuple(
+            datetime.combine(day, time.min)
+            .astimezone()
+            .astimezone(UTC)
+            .isoformat(timespec="microseconds")
+            for day in (start, end)
+        )
 
     def request(self, offset=0) -> SearchRequest:
         return SearchRequest(
             self.search.text(),
             self.type_filter.currentData(),
-            self.scope if self.scope != "settings" else "all",
+            self._last_clip_scope,
             not self.sort.isChecked(),
             offset,
+            date_from=self.date_range()[0],
+            date_to=self.date_range()[1],
         )
 
     def refresh(self):
-        if self.scope == "settings":
+        if self.scope not in {"all", "favorites", "pinned"}:
             return
         self.search_busy = True
         self.load_more.setEnabled(False)
@@ -322,11 +509,27 @@ class MainWindow(QMainWindow):
             self.search_requested.emit(self.request(len(self.model.items)))
 
     def accept_page(self, page: SearchPage, *, append: bool = False):
+        changed = append or page.items != self.model.items
+        if changed:
+            self.motion.transition(
+                self.list_view.viewport(), lambda: self._accept_page(page, append=append)
+            )
+        else:
+            self._accept_page(page, append=append)
+
+    def _accept_page(self, page: SearchPage, *, append: bool = False):
         self.search_busy = False
         self._has_more = page.has_more
         self.load_more.setVisible(page.has_more)
         self.load_more.setEnabled(True)
-        self.count_label.setText(f"{page.total:,} clips  ·  {page.matching:,} matching")
+        self._counts = (page.total, page.matching)
+        self.count_label.setText(
+            tr(
+                "{total:,} clips  ·  {matching:,} matching",
+                total=page.total,
+                matching=page.matching,
+            )
+        )
         self.results_label.setText(
             f"{page.matching:,} CLIPS  /  {len(self.model.items) if append else 0}"
         )
@@ -336,12 +539,20 @@ class MainWindow(QMainWindow):
         else:
             self.model.replace(page.items)
         self._mutating_list = False
-        self.results_label.setText(f"{page.matching:,} CLIPS  ·  {len(self.model.items):,} LOADED")
+        self.results_label.setText(
+            tr(
+                "{matching:,} CLIPS  ·  {loaded:,} LOADED",
+                matching=page.matching,
+                loaded=len(self.model.items),
+            )
+        )
         self.empty.setVisible(not self.model.items)
         self.empty.setText(
-            "No matches. Try another search or filter."
-            if self.search.text()
-            else "No clips here yet. Copy text or save a favorite."
+            tr(
+                "No matches. Try another search or filter."
+                if self.search.text()
+                else "No clips here yet. Copy text or save a favorite."
+            )
         )
         if not append:
             row = next(
@@ -367,7 +578,7 @@ class MainWindow(QMainWindow):
     def show_panel(self, *, quick: bool = False):
         self.quick_mode = quick
         if quick:
-            if self.scope == "settings":
+            if self.scope not in {"all", "favorites", "pinned"}:
                 self.navigate("all")
                 self.quick_mode = True
             screen = QApplication.screenAt(QCursor.pos()) or QApplication.primaryScreen()

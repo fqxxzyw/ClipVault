@@ -6,162 +6,115 @@ A lightweight, privacy-first clipboard manager for Windows.
 
 [中文](README.md) · [Validation](docs/VALIDATION.md) · [Windows checklist](docs/WINDOWS_CHECKLIST.md)
 
-- **Offline and private:** local SQLite, no account, cloud sync, telemetry or API key.
-- **Find and reuse:** instant keyboard access, multi-term and Chinese substring search, favorites, pins and syntax highlighting.
-- **Simple desktop workflow:** PySide6 interface, dark/light themes, tray controls and Windows native hotkeys.
+- **Offline and private:** local SQLite, no account, telemetry, sync or API keys.
+- **Find and reuse:** Chinese substring search, Code / TXT / Markdown categories, dates, favorites and pins.
+- **Simple desktop workflow:** bilingual UI, dark/light themes, a content-only mini picker, highlighting and local Markdown preview.
 
-> Public preview: 0.1.0 Preview 1. [Download the complete Windows x64 bundle](https://github.com/fqxxzyw/ClipVault/releases). Both Linux CI jobs passed 90 tests; Windows CI passed 89 tests, built the EXE and passed isolated startup checks. Real Windows 10/11 clipboard, physical keyboard, tray, startup and multi-monitor behavior still require desktop verification. See the validation report.
+Current source: **0.2.0**. Windows downloads: [Actions builds](https://github.com/fqxxzyw/ClipVault/actions). The build for this update is being verified; see the validation report. The [0.1.0 preview](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.1.0-preview.1) is an earlier version and does not include these additions. Interactive Windows 10/11 acceptance remains pending.
 
-## Actual application screenshots
+## Actual screenshots
 
-These are captures of the running PySide6 window, with public example clips and an isolated temporary database on **Linux/offscreen**. They are not mockups or Windows validation screenshots.
+Captured from the running PySide6 app on **Linux / Qt offscreen**, using public samples and a disposable profile. These are neither mockups nor Windows desktop validation. The image sample is drawn by the test script; file samples refer to nonexistent paths.
 
-![Dark theme](screenshots/clipvault-dark.png)
-![Light theme](screenshots/clipvault-light.png)
-![Settings](screenshots/clipvault-settings.png)
+![English dark theme](screenshots/clipvault-dark.png)
+![Markdown in the Chinese UI](screenshots/clipvault-markdown.png)
+![Content-only mini picker](screenshots/clipvault-mini.png)
 
-## Features
+[Light](screenshots/clipvault-light.png) · [Settings](screenshots/clipvault-settings.png) · [Statistics](screenshots/clipvault-statistics.png) · [Emoji](screenshots/clipvault-emoji.png) · [Images](screenshots/clipvault-image.png) · [File paths](screenshots/clipvault-files.png)
 
-| Feature | Implementation |
+## Features and workflow
+
+Copy in another application. ClipVault captures clipboard change events and saves locally. Select a main-window record to inspect it; double-click, press Enter or click Copy to restore it, then use Ctrl+V in the destination app. Content is never executed and paste is never injected.
+
+| Feature | Behavior |
 | --- | --- |
-| Capture | Event-driven `QClipboard.dataChanged`; bounded native Windows Unicode reader and limited contention retries |
-| Storage | SQLite WAL, SHA-256 deduplication, copy timestamps, persistent favorites and pins, 50-row pages |
-| Search | Literal AND substring matching, Chinese fallback, type and scope filters, 180 ms debounce, time sorting |
-| Classification | Text, HTTP(S) URLs, Python, JavaScript, JSON, shell and SQL; conservative local heuristics |
-| Preview | Pygments highlighting, full-text details, JSON formatting and copy, explicit browser opening |
-| Privacy | Pause without backfill, secret heuristics enabled by default, age/quantity cleanup, confirmed ordinary-history clearing |
-| Settings | Theme, font size, opacity, shortcut, retention, notifications, quick-panel auto-hide, close behavior, Windows user startup |
+| Search and categories | Literal multi-term AND search, Chinese substring fallback, Code group (Python/JS/JSON/Shell/SQL), TXT, Markdown, URLs, images and files |
+| Dates | All, today, last 7/30 days or custom inclusive local dates; based on last copied time |
+| Markdown | Rendered/source view; **Copy Markdown** keeps the original, **Copy plain text** removes Markdown formatting. Plain text can be explicitly marked as Markdown and the type persists |
+| Mini picker | Content only; single-click or Enter copies and hides after success; Markdown context menu chooses copy format; scroll to load more |
+| Emoji | Offline common emoji; click or Space to copy, with history recording when active |
+| Images | Local PNG storage, thumbnails, proportional preview, original-image copy and SHA-256 deduplication; deletion also removes image data |
+| Files | Save local file paths, display consistent file icons, copy paths as text. No file contents are read, uploaded, moved or restored as copy/cut operations |
+| Favorites and pins | Separate navigation, persistent flags and protection from automatic cleanup/ordinary-history clearing |
+| Statistics | Captured copy events, ClipVault reuse events, copied characters/lines/common emoji, images and file selections; date period and confirmed reset |
+| Settings | System/Chinese/English language, dark/light, font, opacity, shortcut, startup, notifications and retention; apply on save |
+| Motion | Interruptible 200ms page/list transitions, hover/pressed/focus states; reduced-motion setting and Windows client-area animation preference |
 
-Only text is recorded. Images and copied files are excluded. Text over **100,000 characters** is skipped entirely. Windows CRLF becomes LF; other whitespace is preserved. Startup does not read the existing clipboard. Nothing copied is executed.
+Counters start with this version, not inferred from old history. Repeated copies count as events while history deduplicates. Paused or filtered copies are excluded. Character counts use Python Unicode length, lines use `splitlines()`. Common ZWJ/skin-tone/flag emoji sequences count together; this is not complete Unicode grapheme segmentation. **Paste count is unavailable:** the clipboard provides no paste event and this app does not record keyboard input. Reuse is never presented as a paste count. Only local numeric aggregates are stored.
 
-## Install and run from source
+## Shortcuts
 
-Target: Windows 10/11 x64, Python 3.11+, graphical desktop. Dependency installation/building may need internet access; the installed application's core operates offline.
+| Action | Result |
+| --- | --- |
+| Ctrl+Shift+V | Native Windows global toggle; configurable combination and full/mini target |
+| Up / Down, Enter | Select and copy; keyboard/default copying preserves original Markdown |
+| Esc | Hide quick panel; main-window minimize fallback without a tray; mini always hides |
+| Alt+F in mini | Return to full window |
+| Alt+drag in mini | Move the borderless picker |
+| Tab / Shift+Tab, Space | Keyboard navigation and button activation |
 
-From the project directory in PowerShell:
+Auto-hide applies to quick panels and the mini picker. Closing normally hides to the tray, with optional quit-on-close; without a tray, closing the main window exits. Startup never reads the existing clipboard.
+
+## Install from source
+
+Target: Windows 10/11 x64, Python 3.11+. Installation/building may need internet; the installed core works offline.
 
 ```powershell
+git clone https://github.com/fqxxzyw/ClipVault.git
+cd ClipVault
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 .\.venv\Scripts\python.exe -m clipvault
-```
-
-Use your installed Python version if 3.11 is unavailable. Install `-e .` without the development extra for runtime-only dependencies. To start hidden:
-
-```powershell
+# Start in the tray
 .\.venv\Scripts\pythonw.exe -m clipvault --background
 ```
 
-Default data: `%LOCALAPPDATA%\ClipVault\history.sqlite3` and `settings.json`, outside the source tree. Use Settings → Open data folder. An explicit `--data-dir` allows an isolated development profile. Linux uses `$XDG_DATA_HOME/ClipVault` or `~/.local/share/ClipVault`; native global hotkeys and startup integration are Windows-only.
+Runtime-only installation: `pip install -e .`. User data: `%LOCALAPPDATA%\ClipVault\history.sqlite3` and `settings.json`, outside the source tree; images are stored in SQLite too. Settings opens the data folder. `--data-dir` supports isolated profiles. Linux uses `$XDG_DATA_HOME/ClipVault` or `~/.local/share/ClipVault`; hotkeys/startup integration are Windows-only.
 
-See [Releases](https://github.com/fqxxzyw/ClipVault/releases) for the preview and Windows download link, or download the [verified Windows onedir artifact](https://github.com/fqxxzyw/ClipVault/actions/runs/38194979657/artifacts/11722853005). GitHub requires sign-in to download Actions artifacts. **Extract the entire ZIP into a separate folder** before launching `ClipVault.exe`; Python installation is not required. Keep `_internal`, `licenses` and all notices. The Windows CI build passed an offscreen startup check; interactive Windows 10/11 verification remains pending.
+GitHub requires sign-in for the Actions `ClipVault-windows-x64-onedir` download. **Extract the complete ZIP**, then run `ClipVault.exe` without Python installed. Keep `_internal`, `licenses` and notices. Artifacts expire; rebuild or rerun CI when needed.
 
-Compare the ZIP's SHA-256 with `a8d8ac528e857e339144422c8356815528295af5ffbc2713af6767eb7326c89d`. The ZIP is hosted as an Actions artifact and has not been attached to a Release; artifacts have retention limits. Build from source or rerun CI when an artifact expires.
+## Privacy and limits
 
-## Use and shortcuts
+Text limit: **100,000 characters**, preview: **20,000**; Details keeps full content. Blank, NUL and invalid surrogate text is skipped; Windows CRLF becomes LF. Images: **16,000,000 pixels**, **8192 per side**, **8 MiB PNG**. Files: **100 paths** and 100,000 total path characters per event. No animated-image sequences, OCR or file-content indexing.
 
-Copy text in another application. Select a record to inspect it; double-click, press Enter or click Copy to put it on the system clipboard, then paste with Ctrl+V in the destination app. ClipVault does not inject a paste into another application.
+Default secret heuristics recognize common keys, password fields and tokens, with false positives and false negatives. **Images have no sensitive-content detection**; paths can disclose private information. Disable image/file capture in Settings or pause before confidential copies. SQLite and images are unencrypted. `secure_delete` and WAL checkpoints do not guarantee secure erasure from SSDs, snapshots or backups.
 
-| Shortcut/action | Effect |
-| --- | --- |
-| Ctrl+Shift+V | Windows global show/hide; configurable |
-| Up / Down | Move selection from search or list |
-| Enter | Copy selection; a hotkey-opened quick panel then hides |
-| Esc | Hide to tray, or minimize if no tray is available |
-| Tray click/double-click | Open window |
-| Pause / Resume | Suspend new captures; no backfill on resume |
+Cleanup supports never/7/30/90 days and ordinary-history count limits; favorites/pins are protected. Deleting or clearing ordinary history removes linked images. Many images can consume considerable disk space; adjust retention. Statistics reset requires separate confirmation.
 
-Global shortcuts require Ctrl, Alt or Win and support letters, digits, F1–F11 and selected navigation keys. Conflicts retain the old registration. No global keyboard hook is installed. Reserved OS shortcuts may fail. Closing defaults to the tray; without a tray it exits so the app remains accessible.
+No core network requests, accounts or telemetry. Markdown denies network, local, relative and data image resources, disables embedded HTML and does not open links. Explicit HTTP(S) browser actions may cause the user's browser to connect. Clipboard code is never run; content is never logged or included in exceptions.
 
-Pins stay above other records. Favorites and pins survive age/quantity cleanup and Clear ordinary history. Defaults: **5,000 ordinary clips** and **30 days**. Total records may exceed the ordinary limit. Cleanup runs at startup, after captures/settings changes and hourly.
+Chinese short/special searches use parameterized LIKE and may scan history. The default ordinary-history limit is 5,000; immediate queries over hundreds of thousands of clips are not promised. Longer ASCII terms can use FTS5 trigram candidates plus literal validation. Database/classification/PNG work is serialized in a QThread; UI results use signals, 180ms search debounce and 50-row pages.
 
-## Search and performance boundaries
+Native Windows clipboard image/file MIME, physical keyboard, tray, startup, displays/DPI and reduced-motion behavior still need desktop checks. Linux offscreen tests cannot replace them. Emoji appearance depends on OS fonts (Segoe UI Emoji on Windows). Linux graphical desktop support is not a release target.
 
-Whitespace separates AND terms. `%`, `_` and quotes are literal, not SQL patterns.
-
-- FTS5 trigram accelerates simple ASCII terms of at least three characters when supported; results are verified for identical literal substring semantics.
-- Chinese, short/special-character terms and environments without FTS5 use parameterized `LIKE` queries. Chinese substrings are supported.
-- Leading-wildcard `LIKE` scans records. Latency grows with record count and text size; the 5,000 ordinary-record default limits normal use. The configurable maximum is 100,000, and unbounded saved favorites can still slow searches. No benchmark claims are made.
-- SQLite, classification and Pygments rendering run in one dedicated Qt worker thread. Signals deliver results to the UI, stale results are discarded, and list rows are loaded incrementally. Highlighted previews are bounded to 20,000 characters; Details shows the full clip.
-
-## Privacy
-
-Default rules recognize common private-key headers, explicit password fields, GitHub/API tokens, AWS keys and bearer fields. They can miss secrets or reject harmless examples. Pause before copying confidential content; this is not a password manager.
-
-The SQLite database is **not encrypted**. Anyone with access to the current user's files may read it. Protect the OS account and disk. Clipboard text is never written to logs or error dialogs; the application creates no content log.
-
-Clear ordinary history requires confirmation and excludes favorites and pins. `secure_delete` is enabled and clearing attempts a WAL checkpoint, but deletion does not guarantee secure erasure from SSDs, snapshots or backups. Delete protected clips individually. Close the app before backing up/removing the data directory.
-
-Core functionality makes no network requests. An explicit Open in browser action sends an HTTP(S) URL to the user's browser, which may then connect to the internet. No remote resources are rendered from clipboard content.
-
-## Build a Windows EXE
+## Build an EXE
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build_windows.ps1
-
-# Or use an existing environment:
+# Or use an existing environment
 .\.venv\Scripts\python.exe scripts/build.py
 .\.venv\Scripts\python.exe scripts/smoke_bundle.py
 ```
 
-Default output: `dist/ClipVault/ClipVault.exe` plus dependencies. `--windowed` removes the extra console. Qt plugins, SVG/ICO icons, Pygments lexers and Windows version metadata are included.
+Default: `dist/ClipVault/ClipVault.exe` plus dependencies, windowed onedir, Qt plugins/icons, Pygments and notices. Linux cannot cross-build a Windows EXE; `--allow-linux` makes a Linux verification bundle only. Optional `--onefile` remains unverified. Isolated startup checks validate window, database, highlighting, Markdown, image storage/readback and exit without reading the real clipboard.
 
-Optional, unverified single-file build:
+## Architecture and testing
 
-```powershell
-.\.venv\Scripts\python.exe scripts/build.py --onefile
-.\.venv\Scripts\python.exe scripts/smoke_bundle.py dist/ClipVault.exe
-```
-
-PyInstaller must run on Windows to produce a Windows executable. `--allow-linux` explicitly permits a **Linux** bundle check; it is not an EXE. The smoke check creates an isolated temporary profile, does not read the clipboard or register a hotkey, and cannot validate an interactive desktop.
-
-## Architecture
-
-| Module | Responsibility |
-| --- | --- |
-| `main.py`, `app.py` | Startup, single-instance lock, controller, lifecycle and tray |
-| `core/` | Clipboard protocol/adapters, native hotkey API, privacy rules, conservative classification |
-| `database/` | Models, parameterized repository, transactional schema migrations |
-| `services/` | QThread database operations, search planning, cleanup, safe HTML previews |
-| `ui/` | Main window, list model/delegate, preview and settings widgets, themes and icons |
-| `utils/`, `resources/` | User paths, atomic configuration, current-user Windows startup, SVG/ICO assets |
-| `tests/`, `scripts/` | Logic/Qt tests, opt-in Windows desktop integration, build and screenshot tooling |
-
-SQLite uses WAL, a 2.5-second busy timeout and bounded background retries. Final failures report that an operation was not completed. `PRAGMA user_version` guards migrations; future schemas are refused without overwriting data. Corrupt databases are not silently replaced.
-
-## Tests and CI
+`core/`: events, native hotkeys, classification/privacy. `database/`: SQLite migrations, FTS and parameterized queries. `services/`: serialized worker, cleanup and safe Markdown conversion. `ui/`: main/mini, preview, tools pages, offline translation and interruptible motion. `utils/`: settings, user paths and HKCU startup. Runtime dependencies: PySide6 and Pygments only.
 
 ```powershell
-.\.venv\Scripts\python.exe -m ruff check .
-.\.venv\Scripts\python.exe -m ruff format --check .
-.\.venv\Scripts\python.exe -m pytest -q
-.\.venv\Scripts\python.exe -m clipvault --smoke-test
+ruff check .
+ruff format --check .
+$env:QT_QPA_PLATFORM="offscreen"
+python -m pytest -q
+python -m clipvault --smoke-test
+python scripts/capture_screenshots.py --offscreen
 ```
 
-Default tests use offscreen Qt and disposable profiles. Real Windows integration is opt-in on an interactive desktop: follow [the checklist](docs/WINDOWS_CHECKLIST.md). Hosted CI performs Linux tests and Windows onedir builds plus isolated packaged startup checks; it does not certify physical keyboard, tray or multiple monitors.
+Local result: **122 passed / 3 skipped**, the latter are opt-in Windows desktop tests. Use the [checklist](docs/WINDOWS_CHECKLIST.md), `QT_QPA_PLATFORM=windows` and `CLIPVAULT_DESKTOP_TESTS=1` for native checks. CI checks Ubuntu Python 3.11/3.12 and builds/smokes/uploads the Windows onedir bundle. It does not assume an interactive runner. See [validation](docs/VALIDATION.md) and actual Actions.
 
-Actual screenshots can be regenerated with `python scripts/capture_screenshots.py --offscreen`. It uses a temporary database and public examples, but briefly changes the Qt/system clipboard. Pause a running personal instance first.
+## Contribute and license
 
-## Known limitations
+Send small, reproducible issues/PRs. Use disposable profiles and public samples, include test commands and actual UI screenshots, and never commit private clips/images/paths or credentials. See [release instructions](docs/RELEASE.md).
 
-- The EXE was built and smoke-tested on Windows Server 2025 CI. Native Windows 10/11 clipboard, hotkey, tray, startup and multi-monitor behavior still require interactive desktop testing.
-- Text only, no encryption, auto-paste, image history or synchronization.
-- Heuristics do not fully parse every language or find every secret; JSON formatting replaces whitespace.
-- OS notifications may coalesce extremely rapid changes; locked clipboard retries read the newest available state. Capturing every overwritten intermediate state is not guaranteed.
-- Persistent clipboard/DB contention produces an error. Pending retry work is in memory and may not survive exit.
-- A second instance is refused rather than using IPC to bring the first one forward.
-- Unsigned binaries need Windows SmartScreen/antivirus checks before publication.
-
-## GitHub release and contribution
-
-Repository: [fqxxzyw/ClipVault](https://github.com/fqxxzyw/ClipVault). Check [GitHub Actions](https://github.com/fqxxzyw/ClipVault/actions) for build results. Follow [release steps](docs/RELEASE.md), complete Windows validation, then publish the complete onedir ZIP and checksums. Repository description:
-
-```text
-A lightweight, offline-first clipboard manager for Windows with instant search, syntax highlighting, and privacy protection.
-```
-
-Topics: `clipboard-manager`, `windows`, `python`, `pyside6`, `sqlite`, `desktop-app`, `productivity`, `open-source`, `privacy`.
-
-Open a branch, run Ruff and pytest, and add meaningful tests for capture/privacy/storage changes. Report platform versions and non-sensitive reproduction steps; never attach real history databases or credentials.
-
-[MIT License](LICENSE). Dependencies retain their own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE) covers project code; dependencies retain their licenses. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Bundles include LGPL/GPL text and corresponding third-party notices.

@@ -1,6 +1,6 @@
 import sqlite3
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def migrate(connection: sqlite3.Connection) -> bool:
@@ -29,6 +29,27 @@ def migrate(connection: sqlite3.Connection) -> bool:
                 "DEFAULT 0 CHECK(is_pinned IN (0, 1))"
             )
             connection.execute("PRAGMA user_version = 2")
+        if version < 3:
+            connection.execute("""
+                CREATE TABLE clipboard_assets (
+                    clip_id INTEGER PRIMARY KEY REFERENCES clipboard_history(id) ON DELETE CASCADE,
+                    png BLOB NOT NULL,
+                    thumbnail BLOB NOT NULL
+                )
+            """)
+            connection.execute("""
+                CREATE TABLE daily_stats (
+                    day TEXT PRIMARY KEY,
+                    captures INTEGER NOT NULL DEFAULT 0,
+                    reuses INTEGER NOT NULL DEFAULT 0,
+                    characters INTEGER NOT NULL DEFAULT 0,
+                    lines INTEGER NOT NULL DEFAULT 0,
+                    emoji INTEGER NOT NULL DEFAULT 0,
+                    images INTEGER NOT NULL DEFAULT 0,
+                    files INTEGER NOT NULL DEFAULT 0
+                )
+            """)
+            connection.execute("PRAGMA user_version = 3")
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_history_time ON "
             "clipboard_history(is_pinned DESC, updated_at DESC, id DESC)"

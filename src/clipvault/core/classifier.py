@@ -38,6 +38,8 @@ def classify(text: str) -> str:
             pass
     # A bounded sample keeps unusually long clips inexpensive to classify.
     sample = sample[:16_000]
+    if re.search(r"(?ms)^ {0,3}(```|~~~)[^\n]*\n.+?^ {0,3}\1\s*$", sample):
+        return "markdown"
     if re.search(
         r"(?is)^\s*(?:--[^\n]*\n\s*)?(?:"
         r"SELECT\s+.+?\s+FROM\s+|INSERT\s+INTO\s+|UPDATE\s+\w+\s+SET\s+|"
@@ -72,4 +74,12 @@ def classify(text: str) -> str:
         except (SyntaxError, ValueError, RecursionError):
             return "text"
         return "python"
+    # Strong Markdown structure only; isolated punctuation is ordinary text.
+    if (
+        re.search(r"(?m)^ {0,3}#{1,6} \S", sample)
+        or re.search(r"(?ms)^ {0,3}(```|~~~)[^\n]*\n.+?^ {0,3}\1\s*$", sample)
+        or re.search(r"(?m)^\s*\|?\s*:?-{3,}:?\s*\|(?:\s*:?-{3,}:?\s*\|?)+\s*$", sample)
+        or len(re.findall(r"(?m)^ {0,3}(?:[-*+] |\d+\. )\S", sample)) >= 2
+    ):
+        return "markdown"
     return "text"
