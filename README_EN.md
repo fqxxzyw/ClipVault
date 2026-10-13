@@ -10,7 +10,7 @@ A lightweight, privacy-first clipboard manager for Windows.
 - **Find and reuse:** Chinese substring search, Code / TXT / Markdown categories, dates, favorites and pins.
 - **Simple desktop workflow:** bilingual UI, dark/light themes, a content-only mini picker, highlighting and local Markdown preview.
 
-Current source: **0.2.0**. Windows downloads: [Actions builds](https://github.com/fqxxzyw/ClipVault/actions). The build for this update is being verified; see the validation report. The [0.1.0 preview](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.1.0-preview.1) is an earlier version and does not include these additions. Interactive Windows 10/11 acceptance remains pending.
+Current version: **0.2.0 Preview 1**. [Preview release and Windows downloads](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.2.0-preview.1). Both Linux jobs passed 123 tests; Windows passed 122 tests, built the EXE and passed isolated startup checks. [Actual CI](https://github.com/fqxxzyw/ClipVault/actions/runs/38339833962). Interactive Windows 10/11 acceptance remains pending.
 
 ## Actual screenshots
 
@@ -71,7 +71,7 @@ py -3.11 -m venv .venv
 
 Runtime-only installation: `pip install -e .`. User data: `%LOCALAPPDATA%\ClipVault\history.sqlite3` and `settings.json`, outside the source tree; images are stored in SQLite too. Settings opens the data folder. `--data-dir` supports isolated profiles. Linux uses `$XDG_DATA_HOME/ClipVault` or `~/.local/share/ClipVault`; hotkeys/startup integration are Windows-only.
 
-GitHub requires sign-in for the Actions `ClipVault-windows-x64-onedir` download. **Extract the complete ZIP**, then run `ClipVault.exe` without Python installed. Keep `_internal`, `licenses` and notices. Artifacts expire; rebuild or rerun CI when needed.
+GitHub requires sign-in for the [verified Windows x64 ZIP](https://github.com/fqxxzyw/ClipVault/actions/runs/38339833962/artifacts/11785609502). **Extract the complete ZIP**, then run `ClipVault.exe` without Python installed. Keep `_internal`, `licenses` and notices. Artifacts expire; rebuild or rerun CI when needed. SHA-256: `5c2680db56302fda2bec14560509c508170e9ddd8aa29d558ca3546127ce7260`. The release links to the Actions artifact; no binary Release attachment has been uploaded.
 
 ## Privacy and limits
 

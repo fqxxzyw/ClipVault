@@ -1,6 +1,6 @@
 # GitHub 发布步骤
 
-公开仓库：[fqxxzyw/ClipVault](https://github.com/fqxxzyw/ClipVault)。现有预览：[Releases](https://github.com/fqxxzyw/ClipVault/releases)。0.2.0 源码提供新语言、Markdown、小窗和富内容功能；早期 0.1.0 二进制不包含本次更新。
+公开仓库：[fqxxzyw/ClipVault](https://github.com/fqxxzyw/ClipVault)。现有预览：[Releases](https://github.com/fqxxzyw/ClipVault/releases)。[0.2.0 预览版](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.2.0-preview.1) 已发布，提供新语言、Markdown、小窗和富内容功能；[已验证的 Windows ZIP](https://github.com/fqxxzyw/ClipVault/actions/runs/38339833962/artifacts/11785609502) 位于 Actions，早期 0.1.0 二进制不包含本次更新。
 
 1. 用临时数据完成 Ruff、pytest、源码 smoke 和 [Windows 桌面清单](WINDOWS_CHECKLIST.md)，明确记录未验证项。
 2. 提交功能和真实截图，查看现有 `Test and build ClipVault` CI。工作流仅 `contents: read`；上传完整 onedir artifact，不写 Release 或变更仓库权限。
