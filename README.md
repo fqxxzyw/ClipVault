@@ -10,7 +10,7 @@ Your Clipboard. Your Data. Your Control.
 - **快捷搜索，快速复用**：中文子串搜索、Code / TXT / MD 分类、日期筛选、收藏与置顶。
 - **轻量简洁，开箱即用**：中英文界面、深浅主题、内容小窗、代码高亮和本地 Markdown 预览。
 
-当前源码 **0.3.0**，本次 Windows 构建正在验证。此前 [0.2.0 预览版](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.2.0-preview.1) 不包含新的小窗移动/缩放与扩展语言功能。构建验证后更新当前下载入口；真实 Windows 10/11 实机验收尚未完成。
+当前版本 [**0.3.0 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.3.0-preview.1)。Windows x64 EXE 构建及打包启动/退出 smoke 已通过 CI；真实 Windows 10/11 实机验收尚未完成。
 
 ## 真实运行截图
 
@@ -72,7 +72,7 @@ py -3.11 -m venv .venv
 
 只运行软件可安装 `-e .`，无需开发依赖。默认数据位于 `%LOCALAPPDATA%\ClipVault\history.sqlite3` 与 `settings.json`，不在项目目录。图片也在 SQLite 中。设置里可打开数据目录；开发测试可用 `--data-dir` 指定隔离目录。Linux 数据目录为 `$XDG_DATA_HOME/ClipVault` 或 `~/.local/share/ClipVault`；全局快捷键和开机启动仅 Windows 提供。
 
-下载已验证的 [Windows x64 完整 ZIP](https://github.com/fqxxzyw/ClipVault/actions/runs/38339833962/artifacts/11785609502) 需要登录 GitHub；**完整解压 ZIP 后运行 ClipVault.exe**，保留 `_internal`、`licenses` 与所有声明，不需要安装 Python。Actions 产物有保留期限，过期后从源码构建或重新运行 CI。此版本 ZIP 的 SHA-256：`5c2680db56302fda2bec14560509c508170e9ddd8aa29d558ca3546127ce7260`。二进制未上传为 Release 附件，发布页提供下载入口。
+下载已验证的 [Windows x64 完整 ZIP](https://github.com/fqxxzyw/ClipVault/actions/runs/38357562691/artifacts/11793796402) 需要登录 GitHub；**完整解压 ZIP 后运行 ClipVault.exe**，保留 `_internal`、`licenses` 与所有声明，不需要安装 Python。Actions 产物有保留期限，过期后从源码构建或重新运行 CI。此版本 ZIP 的 SHA-256：`98c3d617681abd8190e8e69ed16b447b059b86551eb2ed71280bb6f2d3f84e59`。二进制未上传为 Release 附件，发布页提供下载入口。
 
 ## 限制与隐私
 
