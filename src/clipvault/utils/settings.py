@@ -24,6 +24,7 @@ class Settings:
     max_history: int = 5000
     retention_days: int = 30
     sensitive_filter: bool = True
+    clean_copied_text: bool = False
     opacity: int = 100
     font_size: int = 13
     copy_notification: bool = True
@@ -76,6 +77,7 @@ class Settings:
             raise SettingsError(str(error)) from None
         for field in (
             "sensitive_filter",
+            "clean_copied_text",
             "copy_notification",
             "quit_on_close",
             "auto_hide",

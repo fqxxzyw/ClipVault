@@ -123,3 +123,10 @@ python scripts/capture_screenshots.py --offscreen
 欢迎小范围、可复现的 Issue / PR。用临时数据库和公开示例写测试，附验证命令；UI 变化提供真实截图，不提交真实历史、图片、个人路径或密钥。发布步骤见 [RELEASE.md](docs/RELEASE.md)。
 
 项目采用 [MIT License](LICENSE)。Qt、Pygments 等保留各自许可，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，打包目录包含 LGPL/GPL 文本和对应第三方声明。
+
+### 自动清理复制文本（0.3.1）
+
+在 **设置 → 隐私与历史记录** 勾选“自动清理复制文本”，保存后立即生效，默认关闭。
+清理新入库文本及从历史重新复制的文本：去除 U+200B、BOM、U+2060、U+180E 和无效控制字符，将 Unicode 特殊空格逐个替换为普通空格；清理后按内容去重，并重新检查敏感信息。
+保留缩进、Tab、换行、空格数量、中文、Emoji 的 ZWJ/ZWNJ 和变体选择符。图片及文件路径不变。已有记录不批量改写，外部应用刚复制的系统剪贴板不被自动替换；请从 ClipVault 复制清理后的条目。
+不解码 HTML 实体、不删 Markdown 围栏/星号/行号、不自动格式化或猜测缩进，因为这些可能属于有效内容。编辑器显示的 `ZWSP` 标签代表真实零宽字符，普通文本字母 `ZWSP` 不会被误删。

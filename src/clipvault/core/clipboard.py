@@ -9,6 +9,7 @@ from typing import Protocol
 from PySide6.QtCore import QDir, QMimeData, QObject, QTimer, Signal
 from PySide6.QtGui import QClipboard, QGuiApplication, QImage
 
+from clipvault.core.text_cleanup import clean_text
 from clipvault.database.models import MAX_TEXT_LENGTH, utc_now
 
 INTERNAL_MIME = "application/x-clipvault-source"
@@ -183,6 +184,7 @@ class ClipboardMonitor(QObject):
         self.backend = backend
         self.clipboard = clipboard
         self.paused = False
+        self.clean_copied_text = False
         self._generation = 0
         self._write_generation = 0
         self._stopped = False
@@ -224,8 +226,10 @@ class ClipboardMonitor(QObject):
             elif result.text is not None:
                 self.captured.emit(result.text, timestamp)
 
-    def copy(self, text: str, clip_id: int) -> None:
+    def copy(self, text: str, clip_id: int, *, clean: bool = True) -> None:
         self._write_generation += 1
+        if clean and self.clean_copied_text:
+            text = clean_text(text)
         self._write(text, clip_id, self._write_generation, 0)
 
     def copy_image(self, image: QImage, clip_id: int):

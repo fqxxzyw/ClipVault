@@ -122,6 +122,15 @@ class SettingsPage(QWidget):
         for days in (0, 7, 30, 90):
             self.retention.addItem("Never" if days == 0 else f"{days} days", days)
         self.sensitive = QCheckBox("Skip recognizable passwords, private keys and API tokens")
+        self.clean_text = QCheckBox(
+            "Automatically clean copied text (zero-width artifacts and spaces)"
+        )
+        self.clean_hint = QLabel(
+            "Cleans new history and text copied from history; keeps indentation and emoji. "
+            "Does not rewrite the source clipboard or existing records."
+        )
+        self.clean_hint.setWordWrap(True)
+        self.clean_hint.setObjectName("muted")
         self.capture_images = QCheckBox("Save copied images locally (no sensitive-image detection)")
         self.capture_files = QCheckBox("Record copied file paths only; never read file contents")
         layout.addWidget(
@@ -131,6 +140,8 @@ class SettingsPage(QWidget):
                     ("Ordinary clip limit", self.max_history),
                     ("Auto cleanup", self.retention),
                     ("", self.sensitive),
+                    ("", self.clean_text),
+                    ("", self.clean_hint),
                     ("", self.capture_images),
                     ("", self.capture_files),
                 ],
@@ -214,6 +225,7 @@ class SettingsPage(QWidget):
             (self.startup, settings.start_at_login),
             (self.quit_on_close, settings.quit_on_close),
             (self.sensitive, settings.sensitive_filter),
+            (self.clean_text, settings.clean_copied_text),
             (self.capture_images, settings.capture_images),
             (self.capture_files, settings.capture_files),
         ):
@@ -236,6 +248,7 @@ class SettingsPage(QWidget):
                 max_history=self.max_history.value(),
                 retention_days=self.retention.currentData(),
                 sensitive_filter=self.sensitive.isChecked(),
+                clean_copied_text=self.clean_text.isChecked(),
                 capture_images=self.capture_images.isChecked(),
                 capture_files=self.capture_files.isChecked(),
                 copy_notification=self.notifications.isChecked(),

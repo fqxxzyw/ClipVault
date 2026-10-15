@@ -20,6 +20,7 @@ from PySide6.QtGui import QImage
 
 from clipvault.core.classifier import format_json
 from clipvault.core.privacy import validate_capture
+from clipvault.core.text_cleanup import clean_text
 from clipvault.database.repository import Repository
 from clipvault.services.cleanup import cleanup_history
 from clipvault.services.markdown import markdown_plain_text
@@ -64,6 +65,17 @@ class DatabaseWorker(QObject):
                         paused=self.settings.paused,
                         filter_sensitive=self.settings.sensitive_filter,
                     )
+                    # Enforce original length/pause/privacy limits before allocating cleaned text.
+                    # Invalid controls may be repaired; surrogates still fail the second check.
+                    if self.settings.clean_copied_text and (
+                        decision.allowed or decision.reason == "invalid_text"
+                    ):
+                        text = clean_text(text)
+                        decision = validate_capture(
+                            text,
+                            paused=self.settings.paused,
+                            filter_sensitive=self.settings.sensitive_filter,
+                        )
                     if decision.allowed:
                         clip = repo.upsert(text, timestamp)
                         repo.record_stat(text)

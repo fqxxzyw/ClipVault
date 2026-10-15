@@ -6,6 +6,15 @@ from PySide6.QtWidgets import QAbstractButton, QComboBox, QLabel, QLineEdit, QWi
 
 # Source messages are also the English fallback. Keep placeholders identical.
 PAIRS = [
+    (
+        "Automatically clean copied text (zero-width artifacts and spaces)",
+        "自动清理复制文本（零宽脏字符与特殊空格）",
+    ),
+    (
+        "Cleans new history and text copied from history; keeps indentation and emoji. "
+        "Does not rewrite the source clipboard or existing records.",
+        "清理新入库及从历史复制的文本，保留缩进和 Emoji；不改写外部剪贴板或已有记录。",
+    ),
     ("Your clipboard.\nUnder your control.", "你的剪贴板。\n由你掌控。"),
     ("WORKSPACE", "工作空间"),
     ("All Clips", "全部记录"),

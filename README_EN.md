@@ -124,3 +124,10 @@ Local result: **158 passed / 3 skipped**, the latter are opt-in Windows desktop 
 Send small, reproducible issues/PRs. Use disposable profiles and public samples, include test commands and actual UI screenshots, and never commit private clips/images/paths or credentials. See [release instructions](docs/RELEASE.md).
 
 [MIT](LICENSE) covers project code; dependencies retain their licenses. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Bundles include LGPL/GPL text and corresponding third-party notices.
+
+### Automatic copied-text cleanup (0.3.1)
+
+Enable **Settings → Privacy & history → Automatically clean copied text**, then save; disabled by default.
+New history and text reused from history lose U+200B, BOM, U+2060, U+180E and invalid control characters. Each Unicode space is replaced with one ordinary space. Deduplication and privacy checks run on cleaned text.
+Indentation, tabs, line endings, space counts, Chinese, emoji joiners and variation selectors survive. Images and file paths are untouched. Existing history is not rewritten, and external clipboard ownership is unchanged: copy the cleaned item from ClipVault to use it elsewhere.
+HTML entities, Markdown fences, stars, line numbers and literal `ZWSP` letters remain intact. Cleanup never guesses indentation, formats or executes code.

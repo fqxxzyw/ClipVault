@@ -75,6 +75,7 @@ class ClipVaultApplication(QObject):
             self._create_tray()
         self.window.tray_available = self.tray is not None
         self.clipboard.set_paused(self.settings.paused)
+        self.clipboard.clean_copied_text = self.settings.clean_copied_text
         if enable_hotkey:
             try:
                 self.hotkeys.register(self.settings.hotkey)
@@ -228,6 +229,7 @@ class ClipVaultApplication(QObject):
             self.mini.apply_settings(self.settings)
             return
         self.settings = candidate
+        self.clipboard.clean_copied_text = candidate.clean_copied_text
         self.window.settings = candidate
         page = self.window.settings_page
         page.current = replace(page.current, **values)
@@ -247,6 +249,7 @@ class ClipVaultApplication(QObject):
         except SettingsError:
             return
         self.settings = candidate
+        self.clipboard.clean_copied_text = candidate.clean_copied_text
         self.window.settings = candidate
         self.window.settings_page.current = replace(
             self.window.settings_page.current, mini_geometry=tuple(geometry)
@@ -370,7 +373,9 @@ class ClipVaultApplication(QObject):
                 if value.content_type == "image":
                     self.database.submit("get_image", value.id)
                 else:
-                    self.clipboard.copy(value.content, value.id)
+                    self.clipboard.copy(
+                        value.content, value.id, clean=value.content_type != "files"
+                    )
         elif name == "get_image" and value is not None:
             clip_id, image = value
             if not image.isNull():
@@ -430,6 +435,7 @@ class ClipVaultApplication(QObject):
             return
         self.settings = settings
         self.clipboard.set_paused(settings.paused)
+        self.clipboard.clean_copied_text = settings.clean_copied_text
         self.database.submit("configure", settings)
         self.window.apply_settings(settings)
         if self.tray is not None:
@@ -473,6 +479,7 @@ class ClipVaultApplication(QObject):
             self._hotkey_status()
             return
         self.settings = candidate
+        self.clipboard.clean_copied_text = candidate.clean_copied_text
         self.database.submit("configure", candidate)
         self.database.submit("cleanup")
         apply_theme(self.application, candidate.theme, candidate.font_size)
