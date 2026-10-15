@@ -4,13 +4,13 @@ Your Clipboard. Your Data. Your Control.
 
 一款轻量、离线、注重隐私的 Windows 剪贴板管理器。
 
-[English](README_EN.md) · [验证记录](docs/VALIDATION.md) · [Windows 实机清单](docs/WINDOWS_CHECKLIST.md)
+[English](README_EN.md) · [验证记录](docs/VALIDATION_0.3.1.md) · [Windows 实机清单](docs/WINDOWS_CHECKLIST.md)
 
 - **完全离线，隐私优先**：本地 SQLite，无账号、遥测、云同步或 API Key。
 - **快捷搜索，快速复用**：中文子串搜索、Code / TXT / MD 分类、日期筛选、收藏与置顶。
 - **轻量简洁，开箱即用**：中英文界面、深浅主题、内容小窗、代码高亮和本地 Markdown 预览。
 
-当前版本 [**0.3.0 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.3.0-preview.1)。Windows x64 EXE 构建及打包启动/退出 smoke 已通过 CI；真实 Windows 10/11 实机验收尚未完成。
+当前版本 [**0.3.1 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.3.1-preview.1)。Windows x64 EXE 构建及打包启动/退出 smoke 已通过 CI；真实 Windows 10/11 实机验收尚未完成。
 
 ## 真实运行截图
 
@@ -72,7 +72,7 @@ py -3.11 -m venv .venv
 
 只运行软件可安装 `-e .`，无需开发依赖。默认数据位于 `%LOCALAPPDATA%\ClipVault\history.sqlite3` 与 `settings.json`，不在项目目录。图片也在 SQLite 中。设置里可打开数据目录；开发测试可用 `--data-dir` 指定隔离目录。Linux 数据目录为 `$XDG_DATA_HOME/ClipVault` 或 `~/.local/share/ClipVault`；全局快捷键和开机启动仅 Windows 提供。
 
-从 Release 下载已验证的 [Windows x64 完整 ZIP](https://github.com/fqxxzyw/ClipVault/releases/download/v0.3.0-preview.1/ClipVault-0.3.0-preview.1-windows-x64.zip)，无需登录 GitHub；**完整解压 ZIP 后运行 ClipVault.exe**，保留 `_internal`、`licenses` 与所有声明，不需要安装 Python。完整包保存在 Release Assets。此版本 ZIP 的 SHA-256：`98c3d617681abd8190e8e69ed16b447b059b86551eb2ed71280bb6f2d3f84e59`。二进制已上传为 Release 附件。
+从 Release 下载已验证的 [Windows x64 完整 ZIP](https://github.com/fqxxzyw/ClipVault/releases/download/v0.3.1-preview.1/ClipVault-0.3.1-preview.1-windows-x64.zip)，无需登录 GitHub；**完整解压 ZIP 后运行 ClipVault.exe**，保留 `_internal`、`licenses` 与所有声明，不需要安装 Python。完整包保存在 Release Assets。此版本 ZIP 的 SHA-256：`31291d9f072e9e0178e1e787f80ce1ba854192f88f3b79291ce7637eb35f1c07`。二进制已上传为 Release 附件。
 
 ## 限制与隐私
 
@@ -116,7 +116,7 @@ python -m clipvault --smoke-test
 python scripts/capture_screenshots.py --offscreen
 ```
 
-当前本地测试：**158 passed / 3 skipped**，跳过真实 Windows 桌面测试。原生验证请阅读 [清单](docs/WINDOWS_CHECKLIST.md)，设置 `QT_QPA_PLATFORM=windows`、`CLIPVAULT_DESKTOP_TESTS=1` 后运行对应测试。CI 在 Ubuntu Python 3.11 / 3.12 执行检查，在 Windows 构建并验证 onedir、上传完整产物；不假定 Runner 具备真实交互桌面。结果以 [验证记录](docs/VALIDATION.md) 和实际 Actions 为准。
+当前本地测试：**158 passed / 3 skipped**，跳过真实 Windows 桌面测试。原生验证请阅读 [清单](docs/WINDOWS_CHECKLIST.md)，设置 `QT_QPA_PLATFORM=windows`、`CLIPVAULT_DESKTOP_TESTS=1` 后运行对应测试。CI 在 Ubuntu Python 3.11 / 3.12 执行检查，在 Windows 构建并验证 onedir、上传完整产物；不假定 Runner 具备真实交互桌面。结果以 [验证记录](docs/VALIDATION_0.3.1.md) 和实际 Actions 为准。
 
 ## 贡献与许可
 

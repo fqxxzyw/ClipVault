@@ -4,13 +4,13 @@ Your Clipboard. Your Data. Your Control.
 
 A lightweight, privacy-first clipboard manager for Windows.
 
-[中文](README.md) · [Validation](docs/VALIDATION.md) · [Windows checklist](docs/WINDOWS_CHECKLIST.md)
+[中文](README.md) · [Validation](docs/VALIDATION_0.3.1.md) · [Windows checklist](docs/WINDOWS_CHECKLIST.md)
 
 - **Offline and private:** local SQLite, no account, telemetry, sync or API keys.
 - **Find and reuse:** Chinese substring search, Code / TXT / Markdown categories, dates, favorites and pins.
 - **Simple desktop workflow:** bilingual UI, dark/light themes, a content-only mini picker, highlighting and local Markdown preview.
 
-Current release: [**0.3.0 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.3.0-preview.1). Windows x64 EXE build and frozen startup/exit smoke passed CI. Interactive Windows acceptance remains pending.
+Current release: [**0.3.1 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.3.1-preview.1). Windows x64 EXE build and frozen startup/exit smoke passed CI. Interactive Windows acceptance remains pending.
 
 ## Actual screenshots
 
@@ -73,7 +73,7 @@ py -3.11 -m venv .venv
 
 Runtime-only installation: `pip install -e .`. User data: `%LOCALAPPDATA%\ClipVault\history.sqlite3` and `settings.json`, outside the source tree; images are stored in SQLite too. Settings opens the data folder. `--data-dir` supports isolated profiles. Linux uses `$XDG_DATA_HOME/ClipVault` or `~/.local/share/ClipVault`; hotkeys/startup integration are Windows-only.
 
-Download the [verified Windows x64 ZIP](https://github.com/fqxxzyw/ClipVault/releases/download/v0.3.0-preview.1/ClipVault-0.3.0-preview.1-windows-x64.zip) from Release Assets without signing in. **Extract the complete ZIP**, then run `ClipVault.exe` without Python installed. Keep `_internal`, `licenses` and notices. The complete ZIP is attached to the release. SHA-256: `98c3d617681abd8190e8e69ed16b447b059b86551eb2ed71280bb6f2d3f84e59`. The release includes the complete Windows binary ZIP.
+Download the [verified Windows x64 ZIP](https://github.com/fqxxzyw/ClipVault/releases/download/v0.3.1-preview.1/ClipVault-0.3.1-preview.1-windows-x64.zip) from Release Assets without signing in. **Extract the complete ZIP**, then run `ClipVault.exe` without Python installed. Keep `_internal`, `licenses` and notices. The complete ZIP is attached to the release. SHA-256: `31291d9f072e9e0178e1e787f80ce1ba854192f88f3b79291ce7637eb35f1c07`. The release includes the complete Windows binary ZIP.
 
 ## Privacy and limits
 
@@ -117,7 +117,7 @@ python -m clipvault --smoke-test
 python scripts/capture_screenshots.py --offscreen
 ```
 
-Local result: **158 passed / 3 skipped**, the latter are opt-in Windows desktop tests. Use the [checklist](docs/WINDOWS_CHECKLIST.md), `QT_QPA_PLATFORM=windows` and `CLIPVAULT_DESKTOP_TESTS=1` for native checks. CI checks Ubuntu Python 3.11/3.12 and builds/smokes/uploads the Windows onedir bundle. It does not assume an interactive runner. See [validation](docs/VALIDATION.md) and actual Actions.
+Local result: **158 passed / 3 skipped**, the latter are opt-in Windows desktop tests. Use the [checklist](docs/WINDOWS_CHECKLIST.md), `QT_QPA_PLATFORM=windows` and `CLIPVAULT_DESKTOP_TESTS=1` for native checks. CI checks Ubuntu Python 3.11/3.12 and builds/smokes/uploads the Windows onedir bundle. It does not assume an interactive runner. See [validation](docs/VALIDATION_0.3.1.md) and actual Actions.
 
 ## Contribute and license
 
