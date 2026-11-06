@@ -1,12 +1,13 @@
 import sys
 from dataclasses import replace
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from PySide6.QtCore import QObject, Qt, QTimer, QUrl
+from PySide6.QtCore import QItemSelectionModel, QObject, Qt, QTimer, QUrl
 from PySide6.QtGui import QAction, QDesktopServices, QIcon
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
+from clipvault.core.batch import prepare_batch
 from clipvault.core.classifier import is_web_url
 from clipvault.core.clipboard import ClipboardMonitor, QtClipboardBackend
 from clipvault.core.hotkeys import HotkeyError, HotkeyManager, parse_hotkey
@@ -60,6 +61,8 @@ class ClipVaultApplication(QObject):
         self._actions: dict[int, str] = {}
         self._stats_job = None
         self._emoji_text = ""
+        self._pending_reuse: list[tuple[int, str]] = []
+        self._batch_message = ""
         self._stopping = False
         self.tray: QSystemTrayIcon | None = None
         self.refresh_timer = QTimer(self)
@@ -95,10 +98,14 @@ class ClipVaultApplication(QObject):
         self.window.search_requested.connect(self._search)
         self.window.selected.connect(self._preview)
         self.window.copy_requested.connect(self._copy_id)
+        self.window.batch_copy_requested.connect(self._copy_batch)
+        self.window.panel_hidden.connect(self._schedule_reuse_flush)
         self.window.pause_requested.connect(self.toggle_pause)
         self.window.quit_requested.connect(self.quit)
         self.window.mini_requested.connect(self.show_mini)
         self.mini.copy_requested.connect(self._copy_id)
+        self.mini.batch_copy_requested.connect(self._copy_batch)
+        self.mini.panel_hidden.connect(self._schedule_reuse_flush)
         self.mini.markdown_copy_requested.connect(self._copy_markdown)
         self.mini.full_requested.connect(self._show_full)
         self.mini.refresh_requested.connect(self.window.refresh)
@@ -116,6 +123,7 @@ class ClipVaultApplication(QObject):
         self.clipboard.status_changed.connect(self.window.listener_status)
         self.clipboard.skipped.connect(self._clipboard_skipped)
         self.clipboard.copied.connect(self._copied)
+        self.clipboard.copied_batch.connect(self._copied_batch)
         self.database.result.connect(self._result)
         self.database.error.connect(self._error)
         preview = self.window.preview
@@ -270,6 +278,36 @@ class ClipVaultApplication(QObject):
         if clip_id is not None:
             self._actions[self.database.submit("get", clip_id)] = "copy"
 
+    def _copy_batch(self, clip_ids):
+        if clip_ids:
+            self.database.submit("get_batch", list(clip_ids))
+
+    def _queue_reuse(self, ids):
+        ids = list(ids)
+        self.database.submit("record_reuse", len(ids))
+        copied_at = datetime.now(UTC)
+        for index, clip_id in enumerate(ids):
+            self._pending_reuse = [item for item in self._pending_reuse if item[0] != clip_id]
+            timestamp = (copied_at + timedelta(microseconds=index)).isoformat(
+                timespec="microseconds"
+            )
+            self._pending_reuse.append((clip_id, timestamp))
+        self._schedule_reuse_flush()
+
+    def _schedule_reuse_flush(self):
+        QTimer.singleShot(0, self._flush_pending_reuse)
+
+    def _flush_pending_reuse(self, *, force=False):
+        if not self._pending_reuse:
+            return
+        if not force and (
+            (self.window.isVisible() and not self.window.isMinimized())
+            or (self.mini.isVisible() and not self.mini.isMinimized())
+        ):
+            return
+        ids, self._pending_reuse = self._pending_reuse, []
+        self.database.submit("touch_many", ids)
+
     def _copy_markdown(self, clip_id, mode):
         if clip_id is not None:
             if mode == "plain":
@@ -323,7 +361,7 @@ class ClipVaultApplication(QObject):
 
     def _copied(self, clip_id):
         if clip_id:
-            self.database.submit("touch", clip_id)
+            self._queue_reuse([clip_id])
         elif not self.settings.paused and self._emoji_text:
             from clipvault.database.models import utc_now
 
@@ -335,6 +373,15 @@ class ClipVaultApplication(QObject):
             self.tray.showMessage(
                 "ClipVault", tr("已复制到剪贴板"), QSystemTrayIcon.MessageIcon.Information, 1400
             )
+        if self.window.quick_mode:
+            self.window.hide()
+
+    def _copied_batch(self, clip_ids):
+        # Touch in reverse display order so the selected items retain their relative order.
+        self._queue_reuse(reversed(clip_ids))
+        self.window.notify(self._batch_message or tr("Selected clips copied."))
+        if self.mini.isVisible() and not self.settings.mini_topmost:
+            self.mini.dismiss_panel()
         if self.window.quick_mode:
             self.window.hide()
 
@@ -361,7 +408,13 @@ class ClipVaultApplication(QObject):
                         ),
                         0,
                     )
-                    self.mini.list_view.setCurrentIndex(self.window.model.index(row, 0))
+                    index = self.window.model.index(row, 0)
+                    if self.mini.list_view.batch_mode:
+                        self.mini.list_view.selectionModel().setCurrentIndex(
+                            index, QItemSelectionModel.SelectionFlag.NoUpdate
+                        )
+                    else:
+                        self.mini.list_view.setCurrentIndex(index)
         elif name == "preview":
             if job_id == self._preview_job:
                 clip, rendered, image = value
@@ -380,6 +433,21 @@ class ClipVaultApplication(QObject):
             clip_id, image = value
             if not image.isNull():
                 self.clipboard.copy_image(image, clip_id)
+        elif name == "get_batch":
+            try:
+                batch = prepare_batch(
+                    value, self.directory / "clipboard-cache", clean=self.settings.clean_copied_text
+                )
+            except (OSError, ValueError):
+                self.window.notify(tr("Could not prepare the selected clips. Please try again."))
+                return
+            if batch.images and batch.text:
+                self._batch_message = tr("Copied. Paste into a rich-text app to include images.")
+            elif len(batch.images) > 1:
+                self._batch_message = tr("Copied images. Paste as files or into a rich-text app.")
+            else:
+                self._batch_message = tr("Selected clips copied.")
+            self.clipboard.copy_batch(batch)
         elif name in {"format", "markdown_plain"} and value is not None:
             clip_id, text = value
             self.clipboard.copy(text, clip_id)
@@ -395,6 +463,8 @@ class ClipVaultApplication(QObject):
                 self.window.notify(tr("Image exceeds the 8 MiB storage limit and was not saved."))
         elif name == "stats" and job_id == self._stats_job:
             self.window.statistics_page.update_values(value)
+        elif name == "record_reuse" and self.window.scope == "stats":
+            self._query_stats()
         elif name == "reset_stats":
             self._query_stats()
         elif name in {
@@ -402,6 +472,7 @@ class ClipVaultApplication(QObject):
             "flag",
             "delete",
             "touch",
+            "touch_many",
             "clear",
             "cleanup",
             "mark_markdown",
@@ -421,6 +492,10 @@ class ClipVaultApplication(QObject):
         if name == "search" and self._search_job and job_id == self._search_job[0]:
             self.window.search_busy = False
             self.window.load_more.setEnabled(True)
+        if name == "get_batch":
+            message = tr(
+                "Could not copy selection. Check it still exists and images total at most 40 MiB."
+            )
         self.window.notify(message, persistent=True)
         self.window.listener_label.setText(tr("●  Storage error · retry available"))
 
@@ -516,6 +591,7 @@ class ClipVaultApplication(QObject):
         if self._stopping:
             return
         self._stopping = True
+        self._flush_pending_reuse(force=True)
         self.refresh_timer.stop()
         self.cleanup_timer.stop()
         self.clipboard.close()

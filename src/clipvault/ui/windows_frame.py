@@ -31,7 +31,9 @@ def apply_windows_frame(widget, *, dark: bool, glass=False, mini=False) -> bool:
         for attribute, value in frame_attributes(dark=dark, glass=glass, mini=mini, build=build):
             data = ctypes.c_int(value)
             results.append(setter(hwnd, attribute, ctypes.byref(data), ctypes.sizeof(data)) == 0)
-        if glass and build >= 22621:
+        # The full window keeps its native Windows caption and resize frame. Extending
+        # glass underneath it creates an extra line above the application's surface.
+        if glass and mini and build >= 22621:
 
             class Margins(ctypes.Structure):
                 _fields_ = [(name, ctypes.c_int) for name in ("left", "right", "top", "bottom")]

@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QListView,
     QMenu,
+    QPushButton,
     QSlider,
     QStyle,
     QStyledItemDelegate,
@@ -38,6 +39,7 @@ from PySide6.QtWidgets import (
     QWidgetAction,
 )
 
+from clipvault.ui.history_view import HistoryView
 from clipvault.ui.i18n import tr
 from clipvault.ui.icons import icon, thumbnail_icon
 from clipvault.ui.motion import system_reduces_motion
@@ -51,8 +53,12 @@ class ContentDelegate(QStyledItemDelegate):
         self.theme = "dark"
         self.font_size = 13
         self.glass = False
+        self.grid_mode = False
+        self.batch_mode = False
 
     def sizeHint(self, option, index):
+        if self.grid_mode:
+            return QSize(150, 154)
         return QSize(340, 92 + max(self.font_size - 13, 0) * 4)
 
     def paint(self, painter: QPainter, option, index):
@@ -69,7 +75,34 @@ class ContentDelegate(QStyledItemDelegate):
         fill.setAlpha(195 if self.glass else 255)
         painter.setBrush(fill)
         painter.setPen(QPen(QColor(c["accent"] if selected else c["border"]), 1))
-        painter.drawRoundedRect(rect, 14, 14)
+        painter.drawRoundedRect(rect, 8, 8)
+        if self.batch_mode:
+            box = QRectF(rect.right() - 24, rect.top() + 10, 15, 15)
+            painter.setBrush(QColor(c["accent"] if selected else c["card"]))
+            painter.setPen(QPen(QColor(c["accent"] if selected else c["muted"]), 1))
+            painter.drawRoundedRect(box, 4, 4)
+            if selected:
+                painter.setPen(QPen(QColor("white"), 1.5))
+                painter.drawLine(
+                    QPointF(box.left() + 3, box.top() + 8), QPointF(box.left() + 6, box.top() + 11)
+                )
+                painter.drawLine(
+                    QPointF(box.left() + 6, box.top() + 11), QPointF(box.left() + 12, box.top() + 4)
+                )
+        if self.grid_mode and item.content_type == "image" and item.thumbnail:
+            thumbnail_icon(item.thumbnail).paint(
+                painter, int(rect.left() + 12), int(rect.top() + 14), int(rect.width() - 24), 100
+            )
+            painter.setPen(QColor(c["muted"]))
+            painter.drawText(
+                QRectF(rect.left() + 12, rect.bottom() - 24, rect.width() - 24, 16),
+                Qt.AlignmentFlag.AlignLeft,
+                painter.fontMetrics().elidedText(
+                    item.preview, Qt.TextElideMode.ElideRight, int(rect.width() - 24)
+                ),
+            )
+            painter.restore()
+            return
         font = option.font
         font.setPixelSize(self.font_size)
         painter.setFont(font)
@@ -81,7 +114,7 @@ class ContentDelegate(QStyledItemDelegate):
         line_height = metrics.height() + 3
         budget = max(1, int((rect.height() - 26) / line_height))
         text_left = rect.left() + 13
-        text_width = rect.width() - 26
+        text_width = rect.width() - 26 - (20 if self.batch_mode else 0)
         if item.content_type in {"image", "files"}:
             glyph = (
                 thumbnail_icon(item.thumbnail)
@@ -103,6 +136,8 @@ class ContentDelegate(QStyledItemDelegate):
 
 class MiniWindow(QWidget):
     copy_requested = Signal(int)
+    batch_copy_requested = Signal(object)
+    panel_hidden = Signal()
     markdown_copy_requested = Signal(int, str)
     full_requested = Signal()
     refresh_requested = Signal()
@@ -165,7 +200,7 @@ class MiniWindow(QWidget):
         self.close_button = self._tool("close", "Close", row)
         self.close_button.clicked.connect(self.dismiss_panel)
         layout.addWidget(self.header)
-        self.list_view = QListView()
+        self.list_view = HistoryView()
         self.list_view.setModel(model)
         self.list_view.setUniformItemSizes(True)
         self.list_view.setMouseTracking(True)
@@ -173,6 +208,28 @@ class MiniWindow(QWidget):
         self.list_view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.delegate = ContentDelegate(self.list_view)
         self.list_view.setItemDelegate(self.delegate)
+        tools = QHBoxLayout()
+        tools.setContentsMargins(0, 0, 0, 0)
+        self.list_mode = self._tool("list", "List", tools)
+        self.grid_mode = self._tool("grid", "Grid", tools)
+        for button in (self.list_mode, self.grid_mode):
+            button.setCheckable(True)
+        self.list_mode.setChecked(True)
+        self.list_mode.clicked.connect(lambda: self._set_grid_mode(False))
+        self.grid_mode.clicked.connect(lambda: self._set_grid_mode(True))
+        tools.addStretch()
+        self.batch_select = self._tool("select", "Select", tools)
+        self.batch_select.setCheckable(True)
+        self.batch_select.toggled.connect(self._set_batch_mode)
+        self.batch_copy = QPushButton()
+        self.batch_copy.setObjectName("primary")
+        self.batch_copy.setProperty("i18nSkip", True)
+        self.batch_copy.clicked.connect(self._copy_selection)
+        self.batch_copy.hide()
+        tools.addWidget(self.batch_copy)
+        self.list_view.selection_count_changed.connect(self._selection_count_changed)
+        self._selection_count_changed(0)
+        layout.addLayout(tools)
         self.list_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.list_view.customContextMenuRequested.connect(self._menu)
         self.list_view.viewport().installEventFilter(self)
@@ -185,7 +242,13 @@ class MiniWindow(QWidget):
         self.escape = QShortcut(QKeySequence("Esc"), self)
         self.escape.activated.connect(self.dismiss_panel)
         self.enter = QShortcut(QKeySequence("Return"), self)
-        self.enter.activated.connect(lambda: self._copy(self.list_view.currentIndex()))
+        self.enter.activated.connect(
+            lambda: (
+                self._copy_selection()
+                if self.list_view.batch_mode
+                else self._copy(self.list_view.currentIndex())
+            )
+        )
         self.full_shortcut = QShortcut(QKeySequence("Alt+F"), self)
         self.full_shortcut.activated.connect(self.full_requested)
 
@@ -216,7 +279,15 @@ class MiniWindow(QWidget):
         self.list_view.setToolTip(
             tr("Drag to move · Drag edges to resize · Click to copy · Enter / Esc")
         )
-        for button in (self.pin_button, self.options_button, self.full_button, self.close_button):
+        for button in (
+            self.pin_button,
+            self.options_button,
+            self.full_button,
+            self.close_button,
+            self.list_mode,
+            self.grid_mode,
+            self.batch_select,
+        ):
             button.setToolTip(tr(button.property("miniLabel")))
             button.setAccessibleName(button.toolTip())
         if settings.mini_geometry and not self._positioned:
@@ -234,6 +305,29 @@ class MiniWindow(QWidget):
             self.show()
         self.update()
         self.list_view.viewport().update()
+        self._selection_count_changed(len(self.list_view.selected_ids()))
+
+    def _set_grid_mode(self, enabled):
+        self.list_mode.setChecked(not enabled)
+        self.grid_mode.setChecked(enabled)
+        self.list_view.set_grid_mode(enabled)
+
+    def _set_batch_mode(self, enabled):
+        self.list_view.set_batch_mode(enabled)
+        self.batch_copy.setVisible(enabled)
+        self.batch_select.setToolTip(tr("Done" if enabled else "Select"))
+        self.batch_select.setAccessibleName(self.batch_select.toolTip())
+
+    def _selection_count_changed(self, count):
+        self.batch_copy.setText(tr("Copy ({count})", count=count))
+        self.batch_copy.setEnabled(count > 0)
+
+    def _copy_selection(self):
+        ids = self.list_view.selected_ids()
+        if len(ids) > 100:
+            self.setToolTip(tr("Select at most 100 clips at a time."))
+        elif ids:
+            self.batch_copy_requested.emit(ids)
 
     def paintEvent(self, event):
         dark = not self.settings or self.settings.theme == "dark"
@@ -244,14 +338,14 @@ class MiniWindow(QWidget):
         path = QPainterPath()
         path.addRoundedRect(rect, 18, 18)
         painter.setClipPath(path)
-        tint = QColor("#141d31" if dark else "#edf3fc")
-        tint.setAlpha(180 if glass else 255)
+        tint = QColor("#202127" if dark else "#f4f4f6")
+        tint.setAlpha(225 if glass else 255)
         painter.fillPath(path, tint)
         if glass:
             sheen = QLinearGradient(0, 0, self.width(), self.height())
-            sheen.setColorAt(0, QColor(210, 229, 255, 36 if dark else 110))
-            sheen.setColorAt(0.45, QColor(128, 167, 255, 9))
-            sheen.setColorAt(1, QColor(111, 215, 206, 26))
+            sheen.setColorAt(0, QColor(255, 255, 255, 22 if dark else 35))
+            sheen.setColorAt(0.45, QColor(160, 185, 215, 5))
+            sheen.setColorAt(1, QColor(140, 165, 205, 12))
             painter.fillPath(path, sheen)
             halo = QRadialGradient(self._glow, 190)
             halo.setColorAt(0, QColor(174, 204, 255, 25 if dark else 38))
@@ -260,7 +354,7 @@ class MiniWindow(QWidget):
             painter.fillPath(path, halo)
         painter.setClipping(False)
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.setPen(QPen(QColor(215, 232, 255, 65 if dark else 185), 1))
+        painter.setPen(QPen(QColor(190, 193, 202, 65 if dark else 130), 1))
         painter.drawRoundedRect(rect, 18, 18)
         painter.setPen(QPen(QColor(255, 255, 255, 42 if glass else 12), 1))
         painter.drawRoundedRect(rect.adjusted(1, 1, -1, -1), 17, 17)
@@ -349,7 +443,11 @@ class MiniWindow(QWidget):
         self.show()
         self.raise_()
         self.activateWindow()
-        if self.list_view.model().rowCount() and not self.list_view.currentIndex().isValid():
+        if (
+            self.list_view.model().rowCount()
+            and not self.list_view.currentIndex().isValid()
+            and not self.list_view.batch_mode
+        ):
             self.list_view.setCurrentIndex(self.list_view.model().index(0, 0))
         self.list_view.setFocus()
         self.refresh_requested.emit()
@@ -360,6 +458,10 @@ class MiniWindow(QWidget):
             self._glass_native = apply_windows_frame(
                 self, dark=self.settings.theme == "dark", glass=self.settings.mini_glass, mini=True
             )
+
+    def hideEvent(self, event):
+        super().hideEvent(event)
+        self.panel_hidden.emit()
 
     def _remember(self):
         if self._positioned and not self._restoring:
@@ -420,7 +522,7 @@ class MiniWindow(QWidget):
             self._native_gesture = False
             if viewport:
                 index = self.list_view.indexAt(event.position().toPoint())
-                if index.isValid():
+                if index.isValid() and not self.list_view.batch_mode:
                     self.list_view.setCurrentIndex(index)
             if self._edges and self.windowHandle():
                 self._native_gesture = self.windowHandle().startSystemResize(self._edges)
@@ -505,7 +607,11 @@ class MiniWindow(QWidget):
             self._dragging = False
             self._native_gesture = False
             if click and viewport:
-                self._copy(self.list_view.indexAt(event.position().toPoint()))
+                index = self.list_view.indexAt(event.position().toPoint())
+                if self.list_view.batch_mode:
+                    self.list_view.toggle_index(index)
+                else:
+                    self._copy(index)
             else:
                 self._remember()
             return True
@@ -517,7 +623,10 @@ class MiniWindow(QWidget):
                 self.dismiss_panel()
                 return True
             if event.key() in {Qt.Key.Key_Return, Qt.Key.Key_Enter}:
-                self._copy(self.list_view.currentIndex())
+                if self.list_view.batch_mode:
+                    self._copy_selection()
+                else:
+                    self._copy(self.list_view.currentIndex())
                 return True
         if event.type() in {
             QEvent.Type.MouseButtonPress,

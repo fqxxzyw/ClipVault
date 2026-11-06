@@ -325,6 +325,28 @@ PAIRS += [
 ]
 PAIRS += [("Offline. On your device.", "完全离线，数据在本地。"), ("TXT", "TXT · 文本")]
 PAIRS += [
+    ("List", "列表"),
+    ("Grid", "宫格"),
+    ("Select", "多选"),
+    ("Select all", "全选"),
+    ("Select loaded", "全选已加载"),
+    ("Copy selected ({count})", "复制所选（{count}）"),
+    ("Copy ({count})", "复制（{count}）"),
+    ("Select at most 100 clips at a time.", "一次最多选择 100 条记录。"),
+    ("Selected clips copied.", "已复制所选记录。"),
+    (
+        "Copied. Paste into a rich-text app to include images.",
+        "已复制，请粘贴到支持富文本的应用以保留图片。",
+    ),
+    (
+        "Copied images. Paste as files or into a rich-text app.",
+        "已复制图片，可粘贴为文件或粘贴到支持富文本的应用。",
+    ),
+    ("Could not prepare the selected clips. Please try again.", "无法准备所选记录，请重试。"),
+    (
+        "Could not copy selection. Check it still exists and images total at most 40 MiB.",
+        "无法复制所选内容，请确认记录仍存在且图片总量不超过 40 MiB。",
+    ),
     ("Always on top", "窗口置顶"),
     ("Mini window appearance", "小窗外观"),
     ("Mini opacity", "小窗透明度"),

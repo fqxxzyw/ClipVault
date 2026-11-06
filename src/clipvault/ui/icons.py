@@ -30,11 +30,14 @@ PATHS = {
     "close": '<path d="m6 6 12 12M6 18 18 6"/>',
     "sort": '<path d="M5 4v16m-3-3 3 3 3-3M12 5h9m-9 5h7m-7 5h5"/>',
     "refresh": '<path d="M20 7a9 9 0 1 0 1 7M20 2v6h-6"/>',
+    "list": '<path d="M9 6h12M9 12h12M9 18h12M3 6h2M3 12h2M3 18h2"/>',
+    "grid": '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+    "select": '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m7 12 3 3 7-7"/>',
 }
 
 
 @lru_cache(maxsize=128)
-def icon(name: str, color: str = "#aab8ce", size: int = 24) -> QIcon:
+def icon(name: str, color: str = "#718096", size: int = 24) -> QIcon:
     drawing = (
         '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">'
         f'<g fill="none" stroke="{color}" stroke-width="1.65" '

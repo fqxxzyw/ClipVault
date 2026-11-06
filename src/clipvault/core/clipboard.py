@@ -6,9 +6,10 @@ import uuid
 from dataclasses import dataclass
 from typing import Protocol
 
-from PySide6.QtCore import QDir, QMimeData, QObject, QTimer, Signal
+from PySide6.QtCore import QDir, QMimeData, QObject, QTimer, QUrl, Signal
 from PySide6.QtGui import QClipboard, QGuiApplication, QImage
 
+from clipvault.core.batch import BatchPayload
 from clipvault.core.text_cleanup import clean_text
 from clipvault.database.models import MAX_TEXT_LENGTH, utc_now
 
@@ -171,12 +172,33 @@ class QtClipboardBackend:
         if self.clipboard.image(QClipboard.Mode.Clipboard) != image:
             raise ClipboardUnavailable
 
+    def write_batch(self, batch: BatchPayload):
+        mime = QMimeData()
+        mime.setHtml(batch.html)
+        if batch.text:
+            mime.setText(batch.text)
+        if batch.image_files:
+            mime.setUrls([QUrl.fromLocalFile(path) for path in batch.image_files])
+        if len(batch.images) == 1 and not batch.text:
+            image = QImage.fromData(batch.images[0], "PNG")
+            if image.isNull():
+                raise ClipboardUnavailable
+            mime.setImageData(image)
+        token = uuid.uuid4().hex.encode("ascii")
+        mime.setData(INTERNAL_MIME, self.source)
+        mime.setData("application/x-clipvault-write", token)
+        self.clipboard.setMimeData(mime, QClipboard.Mode.Clipboard)
+        result = self.clipboard.mimeData(QClipboard.Mode.Clipboard)
+        if result is None or bytes(result.data("application/x-clipvault-write")) != token:
+            raise ClipboardUnavailable
+
 
 class ClipboardMonitor(QObject):
     captured = Signal(str, str)
     status_changed = Signal(str)
     skipped = Signal(str)
     copied = Signal(int)
+    copied_batch = Signal(object)
     rich_captured = Signal(object, str)
 
     def __init__(self, backend: ClipboardBackend, clipboard: QClipboard | None = None, parent=None):
@@ -236,11 +258,17 @@ class ClipboardMonitor(QObject):
         self._write_generation += 1
         self._write(image, clip_id, self._write_generation, 0)
 
-    def _write(self, text: str, clip_id: int, generation: int, attempt: int) -> None:
+    def copy_batch(self, batch: BatchPayload):
+        self._write_generation += 1
+        self._write(batch, 0, self._write_generation, 0)
+
+    def _write(self, text, clip_id: int, generation: int, attempt: int) -> None:
         if self._stopped or generation != self._write_generation:
             return
         try:
-            if isinstance(text, QImage):
+            if isinstance(text, BatchPayload):
+                self.backend.write_batch(text)
+            elif isinstance(text, QImage):
                 self.backend.write_image(text)
             else:
                 self.backend.write_text(text)
@@ -252,7 +280,10 @@ class ClipboardMonitor(QObject):
             else:
                 self.skipped.emit("copy_failed")
             return
-        self.copied.emit(clip_id)
+        if isinstance(text, BatchPayload):
+            self.copied_batch.emit(text.ids)
+        else:
+            self.copied.emit(clip_id)
 
     def close(self) -> None:
         if self._stopped:

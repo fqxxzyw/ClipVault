@@ -176,6 +176,31 @@ class DatabaseWorker(QObject):
                 elif name == "touch":
                     value = repo.touch(payload)
                     repo.record_stat(reuse=True)
+                elif name == "touch_many":
+                    for clip_id, timestamp in payload:
+                        if repo.get(clip_id) is not None:
+                            repo.touch(clip_id, timestamp)
+                    value = None
+                elif name == "record_reuse":
+                    for _ in range(payload):
+                        repo.record_stat(reuse=True)
+                    value = None
+                elif name == "get_batch":
+                    if not payload or len(payload) > 100 or len(set(payload)) != len(payload):
+                        raise ValueError("Invalid batch")
+                    value = []
+                    total_bytes = 0
+                    for clip_id in payload:
+                        clip = repo.get(clip_id)
+                        if clip is None:
+                            raise ValueError("A selected clip no longer exists")
+                        png = repo.image_data(clip_id) if clip.content_type == "image" else None
+                        if clip.content_type == "image" and not png:
+                            raise ValueError("A selected image is unavailable")
+                        total_bytes += len(png or b"")
+                        if total_bytes > 40 * 1024 * 1024:
+                            raise ValueError("Selected images exceed the batch limit")
+                        value.append((clip, png))
                 elif name == "cleanup":
                     value = cleanup_history(repo, self.settings)
                 elif name == "clear":

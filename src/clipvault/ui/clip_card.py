@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from PySide6.QtCore import QAbstractListModel, QModelIndex, QRectF, QSize, Qt
+from PySide6.QtCore import QAbstractListModel, QModelIndex, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QStyle, QStyledItemDelegate
 
@@ -65,8 +65,12 @@ class ClipCardDelegate(QStyledItemDelegate):
         super().__init__(parent)
         self.theme = "dark"
         self.font_size = 13
+        self.grid_mode = False
+        self.batch_mode = False
 
     def sizeHint(self, option, index):
+        if self.grid_mode:
+            return QSize(150, 154)
         return QSize(280, 112 + (self.font_size - 13) * 3)
 
     def paint(self, painter: QPainter, option, index):
@@ -85,8 +89,21 @@ class ClipCardDelegate(QStyledItemDelegate):
             )
         )
         painter.setPen(QPen(QColor(colors["accent"] if selected else colors["border"]), 1))
-        painter.drawRoundedRect(rect, 14, 14)
+        painter.drawRoundedRect(rect, 8, 8)
         left, top, width = rect.x() + 13, rect.y() + 12, rect.width() - 26
+        if self.batch_mode:
+            box = QRectF(rect.right() - 24, rect.top() + 10, 15, 15)
+            painter.setBrush(QColor(colors["accent"] if selected else colors["card"]))
+            painter.setPen(QPen(QColor(colors["accent"] if selected else colors["muted"]), 1))
+            painter.drawRoundedRect(box, 4, 4)
+            if selected:
+                painter.setPen(QPen(QColor("white"), 1.5))
+                painter.drawLine(
+                    QPointF(box.left() + 3, box.top() + 8), QPointF(box.left() + 6, box.top() + 11)
+                )
+                painter.drawLine(
+                    QPointF(box.left() + 6, box.top() + 11), QPointF(box.left() + 12, box.top() + 4)
+                )
         font = QFont("Segoe UI", 9)
         font.setBold(True)
         painter.setFont(font)
@@ -96,11 +113,27 @@ class ClipCardDelegate(QStyledItemDelegate):
             tag += "  · " + tr("Pinned").upper()
         if item.is_favorite:
             tag += "  ★"
-        painter.drawText(QRectF(left, top, width, 16), Qt.AlignmentFlag.AlignLeft, tag)
+        painter.drawText(
+            QRectF(left, top, width - (22 if self.batch_mode else 0), 16),
+            Qt.AlignmentFlag.AlignLeft,
+            painter.fontMetrics().elidedText(tag, Qt.TextElideMode.ElideRight, int(width - 22)),
+        )
         font.setBold(False)
         font.setPixelSize(self.font_size)
         painter.setFont(font)
         painter.setPen(QColor(colors["text"]))
+        if self.grid_mode and item.content_type == "image" and item.thumbnail:
+            thumbnail_icon(item.thumbnail).paint(painter, int(left), int(top + 25), int(width), 72)
+            painter.setPen(QColor(colors["muted"]))
+            painter.drawText(
+                QRectF(left, rect.bottom() - 25, width, 18),
+                Qt.AlignmentFlag.AlignLeft,
+                painter.fontMetrics().elidedText(
+                    item.preview, Qt.TextElideMode.ElideRight, int(width)
+                ),
+            )
+            painter.restore()
+            return
         if item.content_type in {"image", "files"}:
             glyph = (
                 thumbnail_icon(item.thumbnail)

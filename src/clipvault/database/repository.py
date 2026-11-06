@@ -88,10 +88,11 @@ class Repository:
                 (kind, clip_id),
             )
 
-    def touch(self, clip_id: int) -> None:
+    def touch(self, clip_id: int, timestamp: str | None = None) -> None:
         with self.connection:
             self.connection.execute(
-                "UPDATE clipboard_history SET updated_at = ? WHERE id = ?", (utc_now(), clip_id)
+                "UPDATE clipboard_history SET updated_at = MAX(updated_at, ?) WHERE id = ?",
+                (timestamp or utc_now(), clip_id),
             )
 
     def mark_markdown(self, clip_id: int) -> None:

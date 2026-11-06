@@ -10,7 +10,7 @@ A lightweight, privacy-first clipboard manager for Windows.
 - **Find and reuse:** Chinese substring search, Code / TXT / Markdown categories, dates, favorites and pins.
 - **Simple desktop workflow:** bilingual UI, dark/light themes, a content-only mini picker, highlighting and local Markdown preview.
 
-Current release: [**0.3.1 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.3.1-preview.1). Windows x64 EXE build and frozen startup/exit smoke passed CI. Interactive Windows acceptance remains pending.
+Current release: [**0.4.0 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.0-preview.1). Interactive Windows acceptance remains pending.
 
 ## Actual screenshots
 
@@ -29,6 +29,8 @@ Copy in another application. ClipVault captures clipboard change events and save
 
 | Feature | Behavior |
 | --- | --- |
+| List / grid and batch copy | Select multiple loaded items in either window; texts are joined in display order with blank lines. See image compatibility below |
+| Deferred ordering | Reused items retain their position until all panels are hidden; reuse statistics update immediately |
 | Search and categories | Literal multi-term AND search, Chinese substring fallback, Code group (Python/JS/JSON/Shell/SQL), TXT, Markdown, URLs, images and files |
 | Dates | All, today, last 7/30 days or custom inclusive local dates; based on last copied time |
 | Markdown | Rendered/source view; **Copy Markdown** keeps the original, **Copy plain text** removes Markdown formatting. Plain text can be explicitly marked as Markdown and the type persists |
@@ -73,9 +75,11 @@ py -3.11 -m venv .venv
 
 Runtime-only installation: `pip install -e .`. User data: `%LOCALAPPDATA%\ClipVault\history.sqlite3` and `settings.json`, outside the source tree; images are stored in SQLite too. Settings opens the data folder. `--data-dir` supports isolated profiles. Linux uses `$XDG_DATA_HOME/ClipVault` or `~/.local/share/ClipVault`; hotkeys/startup integration are Windows-only.
 
-Download the [verified Windows x64 ZIP](https://github.com/fqxxzyw/ClipVault/releases/download/v0.3.1-preview.1/ClipVault-0.3.1-preview.1-windows-x64.zip) from Release Assets without signing in. **Extract the complete ZIP**, then run `ClipVault.exe` without Python installed. Keep `_internal`, `licenses` and notices. The complete ZIP is attached to the release. SHA-256: `31291d9f072e9e0178e1e787f80ce1ba854192f88f3b79291ce7637eb35f1c07`. The release includes the complete Windows binary ZIP.
+Download the standalone EXE or complete Windows ZIP from the [0.4.0 Preview 1 release](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.0-preview.1). Extract the entire ZIP if using the folder edition. Licenses and SHA-256 checksums are included as release assets.
 
 ## Privacy and limits
+
+Batch copy supports up to 100 clips and 40 MiB of image data. Image-only batches provide separate PNG files and rich HTML; mixed batches provide HTML plus a plain-text fallback. Destination applications must support the format. For file pastes, temporary PNGs are retained in `clipboard-cache` for at least seven days and expired batches are removed on a subsequent multiple-image file copy; deleting history does not remove these cached files.
 
 Text limit: **100,000 characters**, preview: **20,000**; Details keeps full content. Blank, NUL and invalid surrogate text is skipped; Windows CRLF becomes LF. Images: **16,000,000 pixels**, **8192 per side**, **8 MiB PNG**. Files: **100 paths** and 100,000 total path characters per event. No animated-image sequences, OCR or file-content indexing.
 
@@ -102,7 +106,7 @@ powershell -ExecutionPolicy Bypass -File scripts/build_windows.ps1
 .\.venv\Scripts\python.exe scripts/smoke_bundle.py
 ```
 
-Default: `dist/ClipVault/ClipVault.exe` plus dependencies, windowed onedir, Qt plugins/icons, Pygments and notices. Linux cannot cross-build a Windows EXE; `--allow-linux` makes a Linux verification bundle only. Optional `--onefile` remains unverified. Isolated startup checks validate window, database, highlighting, Markdown, image storage/readback and exit without reading the real clipboard.
+Default: `dist/ClipVault/ClipVault.exe` plus dependencies, windowed onedir, Qt plugins/icons, Pygments and notices. Linux cannot cross-build a Windows EXE; `--allow-linux` makes a Linux verification bundle only. CI also builds and performs an isolated startup/exit check of the `--onefile` executable. Isolated startup checks validate window, database, highlighting, Markdown, image storage/readback and exit without reading the real clipboard.
 
 ## Architecture and testing
 
@@ -117,7 +121,7 @@ python -m clipvault --smoke-test
 python scripts/capture_screenshots.py --offscreen
 ```
 
-Local result: **158 passed / 3 skipped**, the latter are opt-in Windows desktop tests. Use the [checklist](docs/WINDOWS_CHECKLIST.md), `QT_QPA_PLATFORM=windows` and `CLIPVAULT_DESKTOP_TESTS=1` for native checks. CI checks Ubuntu Python 3.11/3.12 and builds/smokes/uploads the Windows onedir bundle. It does not assume an interactive runner. See [validation](docs/VALIDATION_0.3.1.md) and actual Actions.
+See GitHub Actions for automated test results; interactive Windows desktop checks remain separate. Use the [checklist](docs/WINDOWS_CHECKLIST.md), `QT_QPA_PLATFORM=windows` and `CLIPVAULT_DESKTOP_TESTS=1` for native checks. CI checks Ubuntu Python 3.11/3.12 and builds, smoke-checks and uploads the Windows onedir and onefile bundles. It does not assume an interactive runner. See [validation](docs/VALIDATION_0.3.1.md) and actual Actions.
 
 ## Contribute and license
 

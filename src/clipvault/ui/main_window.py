@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, time, timedelta
 
-from PySide6.QtCore import QDate, QEvent, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QDate, QEvent, QItemSelectionModel, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QCursor, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
@@ -21,8 +21,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from clipvault import __version__
 from clipvault.database.models import CONTENT_TYPES, TYPE_LABELS, SearchPage, SearchRequest
 from clipvault.ui.clip_card import ClipCardDelegate, ClipListModel
+from clipvault.ui.history_view import HistoryView
 from clipvault.ui.i18n import set_language, tr, translate_widgets
 from clipvault.ui.icons import icon
 from clipvault.ui.motion import Motion, system_reduces_motion
@@ -37,6 +39,8 @@ class MainWindow(QMainWindow):
     search_requested = Signal(object)
     selected = Signal(int)
     copy_requested = Signal(int)
+    batch_copy_requested = Signal(object)
+    panel_hidden = Signal()
     pause_requested = Signal()
     quit_requested = Signal()
     mini_requested = Signal()
@@ -123,7 +127,7 @@ class MainWindow(QMainWindow):
         small.setObjectName("muted")
         privacy_layout.addWidget(small)
         side.addWidget(privacy)
-        version = QLabel("CLIPVAULT  /  0.3.0")
+        version = QLabel(f"CLIPVAULT  /  {__version__}")
         version.setObjectName("eyebrow")
         version.setContentsMargins(8, 14, 0, 0)
         side.addWidget(version)
@@ -237,7 +241,7 @@ class MainWindow(QMainWindow):
         self.results_label.setObjectName("eyebrow")
         left_layout.addWidget(self.results_label)
         self.model = ClipListModel(self)
-        self.list_view = QListView()
+        self.list_view = HistoryView()
         self.list_view.setModel(self.model)
         self.list_view.setAccessibleName(tr("History list"))
         self.list_view.setMouseTracking(True)
@@ -248,9 +252,7 @@ class MainWindow(QMainWindow):
         self.delegate = ClipCardDelegate(self.list_view)
         self.list_view.setItemDelegate(self.delegate)
         self.list_view.selectionModel().currentChanged.connect(self._select)
-        self.list_view.doubleClicked.connect(
-            lambda index: self.copy_requested.emit(self.model.items[index.row()].id)
-        )
+        self.list_view.doubleClicked.connect(self._double_click)
         self.list_view.installEventFilter(self)
         left_layout.addWidget(self.list_view, 1)
         self.empty = QLabel("No clips yet. Copy some text to begin.")
@@ -268,6 +270,41 @@ class MainWindow(QMainWindow):
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 1)
         splitter.setSizes([310, 335])
+        view_tools = QHBoxLayout()
+        view_tools.setSpacing(6)
+        self.list_mode = QPushButton("List")
+        self.grid_mode = QPushButton("Grid")
+        self.list_mode.setIcon(icon("list"))
+        self.grid_mode.setIcon(icon("grid"))
+        for button in (self.list_mode, self.grid_mode):
+            button.setCheckable(True)
+            view_tools.addWidget(button)
+        self.view_group = QButtonGroup(self)
+        self.view_group.addButton(self.list_mode)
+        self.view_group.addButton(self.grid_mode)
+        self.list_mode.setChecked(True)
+        self.list_mode.clicked.connect(lambda: self.list_view.set_grid_mode(False))
+        self.grid_mode.clicked.connect(lambda: self.list_view.set_grid_mode(True))
+        view_tools.addStretch()
+        self.batch_select = QPushButton("Select")
+        self.batch_select.setProperty("i18nSkip", True)
+        self.batch_select.setIcon(icon("select"))
+        self.batch_select.setCheckable(True)
+        self.batch_select.toggled.connect(self._set_batch_mode)
+        view_tools.addWidget(self.batch_select)
+        self.select_all = QPushButton("Select loaded")
+        self.select_all.clicked.connect(self.list_view.selectAll)
+        self.select_all.hide()
+        view_tools.addWidget(self.select_all)
+        self.batch_copy = QPushButton()
+        self.batch_copy.setProperty("i18nSkip", True)
+        self.batch_copy.setObjectName("primary")
+        self.batch_copy.clicked.connect(self._copy_selection)
+        self.batch_copy.hide()
+        view_tools.addWidget(self.batch_copy)
+        self.list_view.selection_count_changed.connect(self._selection_count_changed)
+        self._selection_count_changed(0)
+        clips_layout.addLayout(view_tools)
         clips_layout.addWidget(splitter, 1)
         self.stack.addWidget(clips_page)
         self.settings_page = SettingsPage(settings)
@@ -332,6 +369,9 @@ class MainWindow(QMainWindow):
         self._translate_dynamic()
         self.list_view.setAccessibleName(tr("History list"))
         self.preview.browser.setAccessibleName(tr("Preview"))
+        self.preview.copy.setIcon(
+            icon("copy", "#101522" if settings.theme == "dark" else "#ffffff")
+        )
         self.preview.language.setAccessibleName(tr("Content language"))
         self.preview.md_view.setAccessibleName(tr("Markdown preview mode"))
         self.preview.md_copy.setAccessibleName(tr("Markdown copy format"))
@@ -353,6 +393,33 @@ class MainWindow(QMainWindow):
         self.pause.setAccessibleName(self.pause.text())
         self.pause.setIcon(icon("play" if settings.paused else "pause"))
         self.listener_status("paused" if settings.paused else "listening")
+        self.batch_select.setText(tr("Done" if self.list_view.batch_mode else "Select"))
+        self._selection_count_changed(len(self.list_view.selected_ids()))
+
+    def _set_batch_mode(self, enabled):
+        self.list_view.set_batch_mode(enabled)
+        self.select_all.setVisible(enabled)
+        self.batch_copy.setVisible(enabled)
+        self.batch_select.setText(tr("Done" if enabled else "Select"))
+        if not enabled and self.list_view.currentIndex().isValid():
+            self.list_view.selectionModel().select(
+                self.list_view.currentIndex(), QItemSelectionModel.SelectionFlag.ClearAndSelect
+            )
+
+    def _selection_count_changed(self, count):
+        self.batch_copy.setText(tr("Copy selected ({count})", count=count))
+        self.batch_copy.setEnabled(count > 0)
+
+    def _copy_selection(self):
+        ids = self.list_view.selected_ids()
+        if len(ids) > 100:
+            self.notify(tr("Select at most 100 clips at a time."))
+        elif ids:
+            self.batch_copy_requested.emit(ids)
+
+    def _double_click(self, index):
+        if index.isValid() and not self.list_view.batch_mode:
+            self.copy_requested.emit(self.model.items[index.row()].id)
 
     def _translate_dynamic(self):
         self.heading.setText(
@@ -562,7 +629,13 @@ class MainWindow(QMainWindow):
                 (i for i, clip in enumerate(self.model.items) if clip.id == self._selected_id), 0
             )
             if self.model.items:
-                self.list_view.setCurrentIndex(self.model.index(row, 0))
+                index = self.model.index(row, 0)
+                if self.list_view.batch_mode:
+                    self.list_view.selectionModel().setCurrentIndex(
+                        index, QItemSelectionModel.SelectionFlag.NoUpdate
+                    )
+                else:
+                    self.list_view.setCurrentIndex(index)
             else:
                 self._selected_id = None
                 self.preview.set_clip(None, "")
@@ -608,6 +681,9 @@ class MainWindow(QMainWindow):
                 self.dismiss_panel()
                 return True
             if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                if self.list_view.batch_mode:
+                    self._copy_selection()
+                    return True
                 clip_id = self.current_id()
                 if clip_id is not None:
                     self.copy_requested.emit(clip_id)
@@ -652,6 +728,8 @@ class MainWindow(QMainWindow):
             self.hide()
 
     def changeEvent(self, event):
+        if event.type() == QEvent.Type.WindowStateChange and self.isMinimized():
+            self.panel_hidden.emit()
         if (
             event.type() == QEvent.Type.WindowStateChange
             and self.isMinimized()
@@ -670,3 +748,7 @@ class MainWindow(QMainWindow):
     def showEvent(self, event):
         super().showEvent(event)
         apply_windows_frame(self, dark=self.settings.theme == "dark", glass=True)
+
+    def hideEvent(self, event):
+        super().hideEvent(event)
+        self.panel_hidden.emit()

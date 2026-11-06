@@ -10,7 +10,7 @@ Your Clipboard. Your Data. Your Control.
 - **快捷搜索，快速复用**：中文子串搜索、Code / TXT / MD 分类、日期筛选、收藏与置顶。
 - **轻量简洁，开箱即用**：中英文界面、深浅主题、内容小窗、代码高亮和本地 Markdown 预览。
 
-当前版本 [**0.3.1 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.3.1-preview.1)。Windows x64 EXE 构建及打包启动/退出 smoke 已通过 CI；真实 Windows 10/11 实机验收尚未完成。
+当前版本 [**0.4.0 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.0-preview.1)。真实 Windows 10/11 实机验收尚未完成。
 
 ## 真实运行截图
 
@@ -28,6 +28,8 @@ Your Clipboard. Your Data. Your Control.
 
 | 功能 | 使用方式 |
 | --- | --- |
+| 列表 / 宫格与批量复制 | 主窗口或小窗切换视图并进入多选；“全选已加载”只选择当前已加载的记录。文本按显示顺序以空行连接；图片和图文粘贴方式及兼容性见下方说明 |
+| 延迟排序 | 复制后当前面板内不立即置顶，所有主窗口和小窗收起后再更新排序；复用统计仍立即计入 |
 | 分类与搜索 | 顶部类型筛选选 Code（24 种代码/配置语言）、TXT、Markdown、URL、图片或文件；搜索多个关键词按 AND 匹配 |
 | 日期筛选 | 所有日期、今天、最近 7/30 天或自定义区间；按最近复制时间，使用本地日期，结束日期包含当天 |
 | Markdown | 显示渲染预览或原始文本；复制格式选 **复制 Markdown**（原文）或 **复制纯文本**（去 Markdown 格式）。普通文本可点“按 Markdown 预览”并持久化类型 |
@@ -72,9 +74,11 @@ py -3.11 -m venv .venv
 
 只运行软件可安装 `-e .`，无需开发依赖。默认数据位于 `%LOCALAPPDATA%\ClipVault\history.sqlite3` 与 `settings.json`，不在项目目录。图片也在 SQLite 中。设置里可打开数据目录；开发测试可用 `--data-dir` 指定隔离目录。Linux 数据目录为 `$XDG_DATA_HOME/ClipVault` 或 `~/.local/share/ClipVault`；全局快捷键和开机启动仅 Windows 提供。
 
-从 Release 下载已验证的 [Windows x64 完整 ZIP](https://github.com/fqxxzyw/ClipVault/releases/download/v0.3.1-preview.1/ClipVault-0.3.1-preview.1-windows-x64.zip)，无需登录 GitHub；**完整解压 ZIP 后运行 ClipVault.exe**，保留 `_internal`、`licenses` 与所有声明，不需要安装 Python。完整包保存在 Release Assets。此版本 ZIP 的 SHA-256：`31291d9f072e9e0178e1e787f80ce1ba854192f88f3b79291ce7637eb35f1c07`。二进制已上传为 Release 附件。
+从 [0.4.0 Preview 1 Release](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.0-preview.1) 下载单文件 EXE，或下载完整 ZIP 并完整解压后运行 `ClipVault.exe`。Release 同时提供许可证和 `SHA256SUMS.txt`。不需要安装 Python。
 
 ## 限制与隐私
+
+批量复制最多 100 条、图片总计 40 MiB。多图单独复制时提供独立 PNG 文件和富文本；图文混合时提供富文本和纯文本回退。目标软件必须支持相应格式，普通文本框不能显示图片。多图文件粘贴会在数据目录 `clipboard-cache` 保存临时 PNG 至少 7 天，并在下一次多图文件复制时清理过期批次；这些文件不会随历史记录删除而同步清除。
 
 文字最多 **100,000 字符**，预览前 **20,000 字符**，详情保留全文。空白、NUL 和无效代理字符跳过；Windows CRLF 转为 LF。图片最多 **16,000,000 像素**、单边 **8192 像素**、PNG **8 MiB**；文件一次最多 **100 个路径**、总路径长度 100,000 字符。不保存动画图片序列，不做 OCR 或文件内容索引。
 
@@ -101,7 +105,7 @@ powershell -ExecutionPolicy Bypass -File scripts/build_windows.ps1
 .\.venv\Scripts\python.exe scripts/smoke_bundle.py
 ```
 
-输出 `dist/ClipVault/ClipVault.exe` 及完整依赖，默认 onedir、无额外控制台窗口，包含 Qt 插件、SVG/ICO、Pygments 和许可证。Linux 不可交叉生成 Windows EXE；`--allow-linux` 仅产生 Linux 构建检查产物。可选 `--onefile` 未验证。启动检查使用临时数据、不读取真实剪贴板，验证窗口、数据库、高亮、Markdown、图片存储/读取与退出。
+输出 `dist/ClipVault/ClipVault.exe` 及完整依赖，默认 onedir、无额外控制台窗口，包含 Qt 插件、SVG/ICO、Pygments 和许可证。Linux 不可交叉生成 Windows EXE；`--allow-linux` 仅产生 Linux 构建检查产物。CI 也构建 `--onefile` 并运行隔离启动/退出检查。启动检查使用临时数据、不读取真实剪贴板，验证窗口、数据库、高亮、Markdown、图片存储/读取与退出。
 
 ## 技术架构与测试
 
@@ -116,7 +120,7 @@ python -m clipvault --smoke-test
 python scripts/capture_screenshots.py --offscreen
 ```
 
-当前本地测试：**158 passed / 3 skipped**，跳过真实 Windows 桌面测试。原生验证请阅读 [清单](docs/WINDOWS_CHECKLIST.md)，设置 `QT_QPA_PLATFORM=windows`、`CLIPVAULT_DESKTOP_TESTS=1` 后运行对应测试。CI 在 Ubuntu Python 3.11 / 3.12 执行检查，在 Windows 构建并验证 onedir、上传完整产物；不假定 Runner 具备真实交互桌面。结果以 [验证记录](docs/VALIDATION_0.3.1.md) 和实际 Actions 为准。
+自动测试结果以本次 GitHub Actions 为准；真实 Windows 桌面测试按需单独执行。原生验证请阅读 [清单](docs/WINDOWS_CHECKLIST.md)，设置 `QT_QPA_PLATFORM=windows`、`CLIPVAULT_DESKTOP_TESTS=1` 后运行对应测试。CI 在 Ubuntu Python 3.11 / 3.12 执行检查，在 Windows 构建并验证 onedir 与 onefile、上传完整产物；不假定 Runner 具备真实交互桌面。结果以 [验证记录](docs/VALIDATION_0.3.1.md) 和实际 Actions 为准。
 
 ## 贡献与许可
 
