@@ -101,6 +101,19 @@ def test_browser_sync_authenticates_and_recovers_by_day(app, qtbot, qapp):
     qtbot.waitUntil(lambda: app.window.drafts_page.current_draft["text"] == "最终版本")
     page = app.window.drafts_page
     assert page.list.count() == 2  # one date heading and one draft
+    # Rebuilding the list for the selected draft must not disable actions while
+    # its refreshed preview is still being fetched on the database thread.
+    page.set_drafts(
+        [
+            {
+                "draft_id": entry["id"],
+                "updated_at": entry["updated_at"],
+                "origin": entry["origin"],
+                "preview": "最终版本",
+            }
+        ]
+    )
+    assert page.delete.isEnabled() and page.current_draft["text"] == "最终版本"
     page.copy.click()
     qtbot.waitUntil(lambda: qapp.clipboard().text() == "最终版本")
     page.search.setText("最终")

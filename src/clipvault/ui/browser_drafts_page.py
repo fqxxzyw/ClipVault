@@ -175,7 +175,10 @@ class BrowserDraftsPage(QWidget):
 
     def _selection_changed(self, current, _previous):
         draft_id = current.data(Qt.ItemDataRole.UserRole) if current is not None else None
-        self.set_preview(None)
+        # Keep the existing preview usable while refreshing the same draft. The list can
+        # refresh asynchronously during typing or a search, before the new preview arrives.
+        if not draft_id or not self.current_draft or self.current_draft.get("draft_id") != draft_id:
+            self.set_preview(None)
         if draft_id:
             self.selected.emit(draft_id)
 
