@@ -32,6 +32,7 @@ class Settings:
     auto_hide: bool = False
     start_at_login: bool = False
     paused: bool = False
+    browser_sync_enabled: bool = False
 
     def validate(self) -> "Settings":
         from clipvault.core.hotkeys import parse_hotkey
@@ -88,6 +89,7 @@ class Settings:
             "capture_files",
             "mini_topmost",
             "mini_glass",
+            "browser_sync_enabled",
         ):
             if type(getattr(self, field)) is not bool:
                 raise SettingsError("Invalid boolean setting")

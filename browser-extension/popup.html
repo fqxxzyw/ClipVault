@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ClipVault 网页草稿</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header><div><strong>网页草稿</strong><p>断网或刷新后，找回未发出的文字</p></div><span class="badge">仅本地</span></header>
+  <main>
+    <section class="card settings">
+      <label class="switch"><input id="enabled" type="checkbox"><span>自动保存已允许网站的草稿</span></label>
+      <div class="site"><span id="site-name">正在读取当前网站…</span><button id="site-toggle" type="button">允许本站</button></div>
+      <p class="muted">默认允许 ChatGPT 网页；其他网站请点击“允许本站”。密码、验证码和支付字段会尽量跳过。</p>
+    </section>
+    <details class="card connection">
+      <summary>连接 ClipVault <span id="sync-status" class="muted">未配对</span></summary>
+      <p class="muted">在 ClipVault 的“浏览器草稿”中开启同步并复制配对码，粘贴到这里。无需配对也能在本扩展中找回草稿。</p>
+      <div class="pair"><input id="token" type="password" autocomplete="off" placeholder="粘贴配对码" aria-label="配对码"><button id="pair" type="button">连接</button></div>
+      <div class="pair-actions"><button id="sync" type="button">立即同步</button><button id="unpair" type="button">解除配对</button></div>
+      <p id="pair-message" class="muted" role="status"></p>
+    </details>
+    <div class="section-heading"><strong>历史草稿</strong><button id="clear" class="quiet" type="button">清空</button></div>
+    <input id="search" type="search" placeholder="搜索内容或网站" aria-label="搜索草稿">
+    <div id="empty" class="empty">暂时没有草稿。在已允许的网站输入文字后会自动保存。</div>
+    <div id="drafts"></div>
+    <p class="footnote">最多保存 500 条、30 天；删除或卸载扩展会删除扩展中的数据。草稿未加密，请避免输入密码或私密信息。这里删除不会删除 ClipVault 中的副本。</p>
+  </main>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

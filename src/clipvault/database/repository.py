@@ -115,6 +115,73 @@ class Repository:
     def count(self) -> int:
         return self.connection.execute("SELECT COUNT(*) FROM clipboard_history").fetchone()[0]
 
+    def save_browser_draft(self, draft: dict, *, retention_days: int = 30) -> None:
+        with self.connection:
+            self.connection.execute(
+                """
+                INSERT INTO browser_drafts
+                  (draft_id, origin, page_path, text, created_at, updated_at, revision)
+                VALUES (:id, :origin, :path, :text, :created_at, :updated_at, :revision)
+                ON CONFLICT(draft_id) DO UPDATE SET
+                  origin = excluded.origin, page_path = excluded.page_path,
+                  text = excluded.text, updated_at = excluded.updated_at,
+                  revision = excluded.revision
+                WHERE excluded.revision > browser_drafts.revision
+                """,
+                draft,
+            )
+            self._cleanup_browser_drafts(retention_days)
+            self.connection.execute(
+                "DELETE FROM browser_drafts WHERE draft_id IN "
+                "(SELECT draft_id FROM browser_drafts ORDER BY updated_at DESC "
+                "LIMIT -1 OFFSET 2000)"
+            )
+
+    def _cleanup_browser_drafts(self, retention_days: int):
+        if retention_days:
+            cutoff = (datetime.now(UTC) - timedelta(days=retention_days)).isoformat(
+                timespec="microseconds"
+            )
+            self.connection.execute("DELETE FROM browser_drafts WHERE updated_at < ?", (cutoff,))
+
+    def cleanup_browser_drafts(self, retention_days: int):
+        with self.connection:
+            self._cleanup_browser_drafts(retention_days)
+
+    def browser_drafts(self, query: str = ""):
+        where = ""
+        values = ()
+        if query.strip():
+            where = " WHERE text LIKE ? ESCAPE '\\' OR origin LIKE ? ESCAPE '\\'"
+            pattern = like_pattern(query.strip())
+            values = (pattern, pattern)
+        rows = self.connection.execute(
+            "SELECT draft_id, origin, page_path, substr(text, 1, 160) AS preview, "
+            "created_at, updated_at FROM browser_drafts"
+            + where
+            + " ORDER BY updated_at DESC LIMIT 2000",
+            values,
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def browser_draft(self, draft_id: str):
+        row = self.connection.execute(
+            "SELECT draft_id, origin, page_path, text, created_at, updated_at "
+            "FROM browser_drafts WHERE draft_id = ?",
+            (draft_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def delete_browser_draft(self, draft_id: str):
+        with self.connection:
+            return self.connection.execute(
+                "DELETE FROM browser_drafts WHERE draft_id = ?", (draft_id,)
+            ).rowcount
+
+    def clear_browser_drafts(self):
+        with self.connection:
+            return self.connection.execute("DELETE FROM browser_drafts").rowcount
+
     def search(self, request: SearchRequest) -> SearchPage:
         if request.content_type not in (*CONTENT_TYPES, "all", "code"):
             raise ValueError("Unknown content type")

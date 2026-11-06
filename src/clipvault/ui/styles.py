@@ -94,7 +94,7 @@ def apply_theme(application, theme: str, font_size: int):
         QFrame#privacyCard {{ background: {c["panel"]}; border: 1px solid {c["border"]};
                              border-radius: 8px; }}
         QToolButton#nav {{ background: transparent; text-align: left; border: 0; border-radius: 8px;
-                         padding: 11px 13px; color: {c["muted"]}; }}
+                         padding: 9px 13px; color: {c["muted"]}; }}
         QToolButton#nav:hover {{ background: {c["hover"]}; color: {c["text"]}; }}
         QToolButton#nav:checked {{ background: {c["selected"]}; color: {c["accent"]};
                                   border-left: 3px solid {c["accent"]}; padding-left: 10px; }}
@@ -103,7 +103,7 @@ def apply_theme(application, theme: str, font_size: int):
         QPushButton:hover, QToolButton:hover {{ background: {c["hover"]}; border-color: {c["muted"]}; }}
         QPushButton:pressed, QToolButton:pressed {{ background: {c["selected"]}; border-color: {c["accent"]}; }}
         QPushButton:focus, QToolButton:focus, QComboBox:focus, QSpinBox:focus {{ border: 1px solid {c["accent"]}; }}
-        QToolButton#nav:focus {{ border: 1px solid {c["accent"]}; padding: 10px 12px; }}
+        QToolButton#nav:focus {{ border: 1px solid {c["accent"]}; padding: 8px 12px; }}
         QPushButton#primary:focus, QPushButton#primary:pressed {{ border: 2px solid {c["text"]}; padding: 8px; }}
         QPushButton:checked {{ background: {c["selected"]}; color: {c["accent"]}; }}
         QPushButton:disabled, QToolButton:disabled {{ color: {c["muted"]}; }}

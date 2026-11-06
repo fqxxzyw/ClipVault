@@ -8,8 +8,9 @@ from PySide6.QtGui import QAction, QDesktopServices, QIcon
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
 from clipvault.core.batch import prepare_batch
+from clipvault.core.browser_bridge import BrowserBridge, pairing_token
 from clipvault.core.classifier import is_web_url
-from clipvault.core.clipboard import ClipboardMonitor, QtClipboardBackend
+from clipvault.core.clipboard import ClipboardMonitor, ClipboardUnavailable, QtClipboardBackend
 from clipvault.core.hotkeys import HotkeyError, HotkeyManager, parse_hotkey
 from clipvault.services.database import DatabaseService
 from clipvault.ui.i18n import tr, translate_widgets
@@ -52,6 +53,11 @@ class ClipVaultApplication(QObject):
         self.mini.setWindowIcon(self.window.windowIcon())
         self.mini.apply_settings(self.settings)
         self.database = DatabaseService(directory / "history.sqlite3", self.settings, self)
+        self.browser_bridge = BrowserBridge(self)
+        self._browser_token = None
+        self._browser_jobs = {}
+        self._browser_list_job = None
+        self._browser_preview_job = None
         self.clipboard = ClipboardMonitor(
             QtClipboardBackend(application.clipboard()), application.clipboard(), self
         )
@@ -73,11 +79,24 @@ class ClipVaultApplication(QObject):
         self.refresh_timer.setSingleShot(True)
         self.refresh_timer.setInterval(100)
         self.refresh_timer.timeout.connect(self.window.refresh)
+        self.browser_refresh_timer = QTimer(self)
+        self.browser_refresh_timer.setSingleShot(True)
+        self.browser_refresh_timer.setInterval(400)
+        self.browser_refresh_timer.timeout.connect(self._query_browser_drafts)
         self.cleanup_timer = QTimer(self)
         self.cleanup_timer.setInterval(60 * 60 * 1000)
         self.cleanup_timer.timeout.connect(lambda: self.database.submit("cleanup"))
         self.cleanup_timer.start()
         self._connect()
+        if self.settings.browser_sync_enabled:
+            try:
+                self._browser_token = pairing_token(self.directory)
+                self.browser_bridge.start(self._browser_token)
+                self.window.drafts_page.set_bridge_status(True)
+            except (OSError, ValueError):
+                self.window.drafts_page.set_bridge_status(
+                    False, tr("Could not start browser sync. Check whether port 47963 is in use.")
+                )
         if not no_tray and QSystemTrayIcon.isSystemTrayAvailable():
             self._create_tray()
         self.window.tray_available = self.tray is not None
@@ -132,6 +151,20 @@ class ClipVaultApplication(QObject):
         self.clipboard.copied_batch.connect(self._copied_batch)
         self.database.result.connect(self._result)
         self.database.error.connect(self._error)
+        self.browser_bridge.received.connect(
+            self._receive_browser_draft, Qt.ConnectionType.QueuedConnection
+        )
+        drafts = self.window.drafts_page
+        drafts.refresh_requested.connect(self._query_browser_drafts)
+        drafts.selected.connect(self._preview_browser_draft)
+        drafts.copy_requested.connect(self._copy_browser_draft)
+        drafts.delete_requested.connect(
+            lambda draft_id: self.database.submit("browser_draft_delete", draft_id)
+        )
+        drafts.clear_requested.connect(self._clear_browser_drafts)
+        drafts.toggle_requested.connect(self._toggle_browser_sync)
+        drafts.pairing_requested.connect(self._copy_browser_pairing)
+        drafts.help_requested.connect(self._browser_help)
         preview = self.window.preview
         preview.copy_requested.connect(lambda: self._copy_id(self.window.current_id()))
         preview.favorite_requested.connect(lambda: self._flag("is_favorite"))
@@ -280,6 +313,80 @@ class ClipVaultApplication(QObject):
     def _preview(self, clip_id):
         self._preview_job = self.database.submit("preview", clip_id)
 
+    def _receive_browser_draft(self, draft, acknowledgement):
+        if self._stopping:
+            acknowledgement["event"].set()
+            return
+        job = self.database.submit("browser_draft_save", draft)
+        self._browser_jobs[job] = acknowledgement
+
+    def _toggle_browser_sync(self, enabled):
+        candidate = replace(self.settings, browser_sync_enabled=enabled)
+        try:
+            if enabled:
+                self._browser_token = pairing_token(self.directory)
+                self.browser_bridge.start(self._browser_token)
+            self.store.save(candidate)
+        except (OSError, ValueError, SettingsError):
+            if enabled:
+                self.browser_bridge.stop()
+            self.window.drafts_page.set_bridge_status(
+                self.browser_bridge.server is not None,
+                tr("Could not start browser sync. Check whether port 47963 is in use.")
+                if enabled
+                else tr("Could not save browser sync settings."),
+            )
+            return
+        if not enabled:
+            self.browser_bridge.stop()
+        self.settings = candidate
+        self.window.settings = candidate
+        self.window.settings_page.current = replace(
+            self.window.settings_page.current, browser_sync_enabled=enabled
+        )
+        self.database.submit("configure", candidate)
+        self.window.drafts_page.set_bridge_status(enabled)
+
+    def _copy_browser_pairing(self):
+        if self.browser_bridge.server is None or not self._browser_token:
+            return
+        try:
+            self.clipboard.backend.write_text(self._browser_token)
+        except (ClipboardUnavailable, RuntimeError, OSError):
+            self.window.notify(tr("Could not copy the pairing code. Please retry."))
+            return
+        self.window.notify(tr("Pairing code copied. Paste it into the browser extension."))
+
+    def _browser_help(self):
+        QDesktopServices.openUrl(
+            QUrl("https://github.com/fqxxzyw/ClipVault/blob/main/docs/BROWSER_DRAFTS.md")
+        )
+
+    def _query_browser_drafts(self):
+        self._browser_list_job = self.database.submit(
+            "browser_draft_list", self.window.drafts_page.search.text()
+        )
+
+    def _preview_browser_draft(self, draft_id):
+        self._browser_preview_job = self.database.submit("browser_draft_get", draft_id)
+
+    def _copy_browser_draft(self, text):
+        self._emoji_text = ""
+        self.clipboard.copy(text, 0, clean=False)
+
+    def _clear_browser_drafts(self):
+        if (
+            QMessageBox.question(
+                self.window,
+                tr("Clear drafts…"),
+                tr("Clear browser drafts? Browser-local copies will remain."),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            == QMessageBox.StandardButton.Yes
+        ):
+            self.database.submit("browser_draft_clear")
+
     def _copy_id(self, clip_id):
         if clip_id is not None:
             self._actions[self.database.submit("get", clip_id)] = "copy"
@@ -423,7 +530,21 @@ class ClipVaultApplication(QObject):
             self.window.notify(messages[reason])
 
     def _result(self, job_id, name, value):
-        if name == "search":
+        if name == "browser_draft_save":
+            acknowledgement = self._browser_jobs.pop(job_id, None)
+            if acknowledgement is not None:
+                acknowledgement["ok"] = True
+                acknowledgement["event"].set()
+            if self.window.scope == "drafts":
+                self.browser_refresh_timer.start()
+        elif name == "browser_draft_list" and job_id == self._browser_list_job:
+            self.window.drafts_page.set_drafts(value)
+        elif name == "browser_draft_get" and job_id == self._browser_preview_job:
+            if value is None or value["draft_id"] == self.window.drafts_page.current_id():
+                self.window.drafts_page.set_preview(value)
+        elif name in {"browser_draft_delete", "browser_draft_clear"}:
+            self._query_browser_drafts()
+        elif name == "search":
             if self._search_job is not None and self._search_job[0] == job_id:
                 current = self.mini.list_view.currentIndex()
                 selected = current.data(Qt.ItemDataRole.UserRole).id if current.isValid() else None
@@ -530,6 +651,15 @@ class ClipVaultApplication(QObject):
 
     def _error(self, job_id, name, message):
         self._actions.pop(job_id, None)
+        if name == "browser_draft_save":
+            acknowledgement = self._browser_jobs.pop(job_id, None)
+            if acknowledgement is not None:
+                acknowledgement["event"].set()
+            self.window.notify(
+                tr("Browser draft sync could not save. The extension keeps its local copy."),
+                persistent=True,
+            )
+            return
         if name == "manual_save" and job_id == self._manual_job:
             self._manual_job = None
             if self._manual_dialog is not None:
@@ -642,7 +772,9 @@ class ClipVaultApplication(QObject):
         self._stopping = True
         self._flush_pending_reuse(force=True)
         self.refresh_timer.stop()
+        self.browser_refresh_timer.stop()
         self.cleanup_timer.stop()
+        self.browser_bridge.stop()
         self.clipboard.close()
         self.hotkeys.close()
         if self.tray is not None:

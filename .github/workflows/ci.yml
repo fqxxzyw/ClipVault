@@ -72,9 +72,25 @@ jobs:
         with:
           name: tests-windows
           path: test-results/
+  browser-extension-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Extension logic and isolation tests
+        run: node --test tests/browser_extension/*.test.mjs
+      - name: Install Chromium test dependencies
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/cv-pw" playwright@1.62.1
+          "$RUNNER_TEMP/cv-pw/node_modules/.bin/playwright" install --with-deps chromium
+          sudo apt-get install -y xvfb
+      - name: Test the real unpacked extension
+        run: NODE_PATH="$RUNNER_TEMP/cv-pw/node_modules" xvfb-run -a node tests/browser_extension/e2e.cjs
   release-preview:
-    if: "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.head_commit.message == 'release: v0.4.1-preview.1' }}"
-    needs: [test, windows-build]
+    if: "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.head_commit.message == 'release: v0.5.0-preview.1' }}"
+    needs: [test, windows-build, browser-extension-test]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -94,19 +110,21 @@ jobs:
           set -euo pipefail
           test -f release/onedir/ClipVault.exe
           test -f release/onefile/ClipVault.exe
-          (cd release/onedir && zip -qr ../ClipVault-0.4.1-preview.1-windows-x64.zip .)
-          (cd release/onefile && zip -qr ../ClipVault-0.4.1-preview.1-licenses.zip LICENSE THIRD_PARTY_NOTICES.md licenses)
-          cp release/onefile/ClipVault.exe release/ClipVault-0.4.1-preview.1-windows-x64.exe
-          (cd release && sha256sum ClipVault-0.4.1-preview.1-windows-x64.zip ClipVault-0.4.1-preview.1-windows-x64.exe ClipVault-0.4.1-preview.1-licenses.zip > SHA256SUMS.txt)
+          (cd release/onedir && zip -qr ../ClipVault-0.5.0-preview.1-windows-x64.zip .)
+          (cd release/onefile && zip -qr ../ClipVault-0.5.0-preview.1-licenses.zip LICENSE THIRD_PARTY_NOTICES.md licenses)
+          (cd browser-extension && zip -qr ../release/ClipVault-0.5.0-preview.1-browser-extension.zip .)
+          cp release/onefile/ClipVault.exe release/ClipVault-0.5.0-preview.1-windows-x64.exe
+          (cd release && sha256sum ClipVault-0.5.0-preview.1-windows-x64.zip ClipVault-0.5.0-preview.1-windows-x64.exe ClipVault-0.5.0-preview.1-licenses.zip ClipVault-0.5.0-preview.1-browser-extension.zip > SHA256SUMS.txt)
       - name: Publish preview release and Windows assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v0.4.1-preview.1 \
-            release/ClipVault-0.4.1-preview.1-windows-x64.exe \
-            release/ClipVault-0.4.1-preview.1-windows-x64.zip \
-            release/ClipVault-0.4.1-preview.1-licenses.zip \
+          gh release create v0.5.0-preview.1 \
+            release/ClipVault-0.5.0-preview.1-windows-x64.exe \
+            release/ClipVault-0.5.0-preview.1-windows-x64.zip \
+            release/ClipVault-0.5.0-preview.1-licenses.zip \
+            release/ClipVault-0.5.0-preview.1-browser-extension.zip \
             release/SHA256SUMS.txt \
             --target "$GITHUB_SHA" --prerelease \
-            --title "ClipVault 0.4.1 Preview 1 — 手动创建常用内容" \
-            --notes-file docs/RELEASE_NOTES_0.4.1.md
+            --title "ClipVault 0.5.0 Preview 1 — 浏览器草稿保护" \
+            --notes-file docs/RELEASE_NOTES_0.5.0.md

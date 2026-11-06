@@ -6,11 +6,14 @@ A lightweight, privacy-first clipboard manager for Windows.
 
 [中文](README.md) · [Validation](docs/VALIDATION_0.3.1.md) · [Windows checklist](docs/WINDOWS_CHECKLIST.md)
 
-- **Offline and private:** local SQLite, no account, telemetry, sync or API keys.
+- **Offline and private:** local SQLite, no account, telemetry, cloud sync or API keys.
 - **Find and reuse:** Chinese substring search, Code / TXT / Markdown categories, dates, favorites and pins.
 - **Simple desktop workflow:** bilingual UI, dark/light themes, a content-only mini picker, highlighting and local Markdown preview.
+- **Browser draft recovery:** optional extension saves drafts locally on allowed websites, with optional local synchronization to ClipVault.
 
-Current release: [**0.4.1 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.1-preview.1). Interactive Windows acceptance remains pending.
+Current release: [**0.5.0 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.5.0-preview.1). Interactive Windows acceptance remains pending.
+
+See the [browser extension setup and privacy guide](docs/BROWSER_DRAFTS.md).
 
 ## Actual screenshots
 
@@ -76,7 +79,7 @@ py -3.11 -m venv .venv
 
 Runtime-only installation: `pip install -e .`. User data: `%LOCALAPPDATA%\ClipVault\history.sqlite3` and `settings.json`, outside the source tree; images are stored in SQLite too. Settings opens the data folder. `--data-dir` supports isolated profiles. Linux uses `$XDG_DATA_HOME/ClipVault` or `~/.local/share/ClipVault`; hotkeys/startup integration are Windows-only.
 
-Download the standalone EXE or complete Windows ZIP from the [0.4.1 Preview 1 release](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.1-preview.1). Extract the entire ZIP if using the folder edition. Licenses and SHA-256 checksums are included as release assets.
+Download the standalone EXE or complete Windows ZIP from the [0.5.0 Preview 1 release](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.5.0-preview.1). Extract the entire ZIP if using the folder edition. Licenses and SHA-256 checksums are included as release assets.
 
 ## Privacy and limits
 
@@ -94,7 +97,7 @@ HTML uses local Qt rich text, not a full browser: scripts, external resources an
 
 Documented DWM APIs request Windows 11 dark captions, rounded system corners and Mica/Acrylic. The mini picker also draws translucent glass, soft light and reflective borders. Native Windows 11 blur requires physical-desktop verification; other platforms fall back to translucent styling, not Apple's optical liquid-glass refraction. Reduced motion disables custom page slides and animated highlights; idle windows have no animation timer.
 
-No core network requests, accounts or telemetry. Markdown denies network, local, relative and data image resources, disables embedded HTML and does not open links. Explicit HTTP(S) browser actions may cause the user's browser to connect. Clipboard code is never run; content is never logged or included in exceptions.
+No external network requests, accounts or telemetry. Optional browser draft sync uses an authenticated localhost connection. Markdown denies network, local, relative and data image resources, disables embedded HTML and does not open links. Explicit HTTP(S) browser actions may cause the user's browser to connect. Clipboard code is never run; content is never logged or included in exceptions.
 
 Chinese short/special searches use parameterized LIKE and may scan history. The default ordinary-history limit is 5,000; immediate queries over hundreds of thousands of clips are not promised. Longer ASCII terms can use FTS5 trigram candidates plus literal validation. Database/classification/PNG work is serialized in a QThread; UI results use signals, 180ms search debounce and 50-row pages.
 

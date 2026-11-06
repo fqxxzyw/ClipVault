@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from clipvault import __version__
 from clipvault.database.models import CONTENT_TYPES, TYPE_LABELS, SearchPage, SearchRequest
+from clipvault.ui.browser_drafts_page import BrowserDraftsPage
 from clipvault.ui.clip_card import ClipCardDelegate, ClipListModel
 from clipvault.ui.history_view import HistoryView
 from clipvault.ui.i18n import set_language, tr, translate_widgets
@@ -73,7 +74,7 @@ class MainWindow(QMainWindow):
         sidebar.setObjectName("sidebar")
         sidebar.setFixedWidth(173)
         side = QVBoxLayout(sidebar)
-        side.setContentsMargins(13, 23, 13, 20)
+        side.setContentsMargins(13, 17, 13, 12)
         side.setSpacing(6)
         brand_row = QHBoxLayout()
         logo = QLabel()
@@ -86,7 +87,7 @@ class MainWindow(QMainWindow):
         side.addLayout(brand_row)
         tagline = QLabel("Your clipboard.\nUnder your control.")
         tagline.setObjectName("muted")
-        tagline.setContentsMargins(5, 7, 0, 25)
+        tagline.setContentsMargins(5, 7, 0, 12)
         side.addWidget(tagline)
         label = QLabel("WORKSPACE")
         label.setObjectName("eyebrow")
@@ -98,6 +99,7 @@ class MainWindow(QMainWindow):
             ("all", "All Clips", "clipboard"),
             ("favorites", "Favorites", "star"),
             ("pinned", "Pinned", "pin"),
+            ("drafts", "Browser drafts", "text"),
             ("stats", "Statistics", "stats"),
             ("emoji", "Emoji", "emoji"),
             ("settings", "Settings", "settings"),
@@ -319,6 +321,8 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.statistics_page)
         self.emoji_page = EmojiPage()
         self.stack.addWidget(self.emoji_page)
+        self.drafts_page = BrowserDraftsPage()
+        self.stack.addWidget(self.drafts_page)
         body.addWidget(self.stack, 1)
         main_layout.addWidget(workspace, 1)
         self.count_label = QLabel("0 clips")
@@ -401,6 +405,7 @@ class MainWindow(QMainWindow):
         self.listener_status("paused" if settings.paused else "listening")
         self.batch_select.setText(tr("Done" if self.list_view.batch_mode else "Select"))
         self._selection_count_changed(len(self.list_view.selected_ids()))
+        self.drafts_page.set_bridge_status(self.drafts_page.toggle.isChecked())
 
     def _set_batch_mode(self, enabled):
         self.list_view.set_batch_mode(enabled)
@@ -437,6 +442,7 @@ class MainWindow(QMainWindow):
                     "settings": "Settings",
                     "stats": "Statistics",
                     "emoji": "Emoji",
+                    "drafts": "Browser drafts",
                 }[self.scope]
             )
         )
@@ -449,6 +455,7 @@ class MainWindow(QMainWindow):
                     "settings": "Make ClipVault feel like yours.",
                     "stats": "Statistics of your local clipboard activity.",
                     "emoji": "A little expression, ready to copy.",
+                    "drafts": "Recover writing from supported websites.",
                 }[self.scope]
             )
         )
@@ -507,6 +514,7 @@ class MainWindow(QMainWindow):
                     "settings": "Settings",
                     "stats": "Statistics",
                     "emoji": "Emoji",
+                    "drafts": "Browser drafts",
                 }[scope]
             )
         )
@@ -519,19 +527,22 @@ class MainWindow(QMainWindow):
                     "settings": "Make ClipVault feel like yours.",
                     "stats": "Statistics of your local clipboard activity.",
                     "emoji": "A little expression, ready to copy.",
+                    "drafts": "Recover writing from supported websites.",
                 }[scope]
             )
         )
         self.motion.transition(
             self.stack,
             lambda: self.stack.setCurrentIndex(
-                {"settings": 1, "stats": 2, "emoji": 3}.get(scope, 0)
+                {"settings": 1, "stats": 2, "emoji": 3, "drafts": 4}.get(scope, 0)
             ),
         )
         if scope in {"all", "favorites", "pinned"}:
             self.refresh()
         elif scope == "stats":
             self.statistics_page.refresh_requested.emit()
+        elif scope == "drafts":
+            self.drafts_page.refresh_requested.emit()
 
     def _dates_changed(self):
         custom = self.date_filter.currentData() == -1

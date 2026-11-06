@@ -9,8 +9,11 @@ Your Clipboard. Your Data. Your Control.
 - **完全离线，隐私优先**：本地 SQLite，无账号、遥测、云同步或 API Key。
 - **快捷搜索，快速复用**：中文子串搜索、Code / TXT / MD 分类、日期筛选、收藏与置顶。
 - **轻量简洁，开箱即用**：中英文界面、深浅主题、内容小窗、代码高亮和本地 Markdown 预览。
+- **浏览器草稿保护**：可选扩展为 ChatGPT 等已允许网站保存本地草稿，断网后可按日期找回；支持连接桌面端。
 
-当前版本 [**0.4.1 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.1-preview.1)。真实 Windows 10/11 实机验收尚未完成。
+当前版本 [**0.5.0 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.5.0-preview.1)。真实 Windows 10/11 实机验收尚未完成。
+
+[浏览器扩展安装、使用与隐私说明](docs/BROWSER_DRAFTS.md)
 
 ## 真实运行截图
 
@@ -75,7 +78,7 @@ py -3.11 -m venv .venv
 
 只运行软件可安装 `-e .`，无需开发依赖。默认数据位于 `%LOCALAPPDATA%\ClipVault\history.sqlite3` 与 `settings.json`，不在项目目录。图片也在 SQLite 中。设置里可打开数据目录；开发测试可用 `--data-dir` 指定隔离目录。Linux 数据目录为 `$XDG_DATA_HOME/ClipVault` 或 `~/.local/share/ClipVault`；全局快捷键和开机启动仅 Windows 提供。
 
-从 [0.4.1 Preview 1 Release](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.1-preview.1) 下载单文件 EXE，或下载完整 ZIP 并完整解压后运行 `ClipVault.exe`。Release 同时提供许可证和 `SHA256SUMS.txt`。不需要安装 Python。
+从 [0.5.0 Preview 1 Release](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.5.0-preview.1) 下载单文件 EXE，或下载完整 ZIP 并完整解压后运行 `ClipVault.exe`。Release 同时提供许可证和 `SHA256SUMS.txt`。不需要安装 Python。
 
 ## 限制与隐私
 
@@ -93,7 +96,7 @@ HTML 使用 Qt 富文本进行本地静态预览，不是完整浏览器：不�
 
 Windows 11 框架通过文档化 DWM API 请求深色标题栏、系统圆角、Mica/Acrylic；玻璃小窗还绘制半透明层、柔和光晕和反射边框。**Windows 11 原生模糊视觉尚待实机验证**，其他系统使用半透明外观回退；此效果不是 Apple 液态玻璃的光学折射实现。窗口绘制及滑动动效真实运行，减少动效时禁用页面滑动和指针高光动画。
 
-核心无网络请求、账户、遥测或同步。Markdown 不加载网络、本地、相对或 data 图片，不打开链接，内嵌 HTML 禁用；“在浏览器中打开”只对用户主动选择的 HTTP(S) URL 调用默认浏览器。不会执行剪贴板代码或把原文写入日志/异常。
+核心无外部网络请求、账户、遥测或云同步。可选浏览器草稿功能使用经配对授权的本机回环连接。Markdown 不加载网络、本地、相对或 data 图片，不打开链接，内嵌 HTML 禁用；“在浏览器中打开”只对用户主动选择的 HTTP(S) URL 调用默认浏览器。不会执行剪贴板代码或把原文写入日志/异常。
 
 中文短关键词和特殊字符采用参数化 LIKE 回退，会扫描历史；默认普通记录上限 5,000，几十万条记录的中文子串查询不承诺即时。英文较长关键词可走 FTS5 trigram 候选查询，再按字面验证。数据库、分类、PNG 编码和统计在独立 Qt 工作线程，主线程通过信号接收结果；搜索防抖 180ms、分页 50 条。
 

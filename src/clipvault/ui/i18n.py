@@ -226,6 +226,54 @@ PAIRS = [
     ("Last copied: {date}", "最近复制：{date}"),
 ]
 PAIRS += [
+    ("Browser drafts", "浏览器草稿"),
+    ("Recover writing from supported websites.", "按日期找回浏览器里未发出的文字。"),
+    (
+        "The browser extension saves drafts locally even when ClipVault is closed. "
+        "Connect it to see backups here.",
+        "浏览器扩展会在本地保存草稿，即使 ClipVault 未运行也可找回；连接后可在这里查看。",
+    ),
+    ("Copy pairing code", "复制配对码"),
+    ("Install browser extension", "安装浏览器扩展"),
+    ("Search drafts or websites…", "搜索草稿或网站…"),
+    ("Draft text", "草稿内容"),
+    ("Copy draft", "复制草稿"),
+    ("Delete draft", "删除草稿"),
+    ("Clear drafts…", "清空草稿…"),
+    ("Start browser sync", "开启浏览器同步"),
+    ("Stop browser sync", "停止浏览器同步"),
+    ("Sync is on. Pair the extension using the code.", "同步已开启，请将配对码填入浏览器扩展。"),
+    (
+        "Sync is off. Browser-local backups still work independently.",
+        "同步已关闭；浏览器扩展仍可独立保存草稿。",
+    ),
+    (
+        "Drafts are stored locally without encryption. Deleting here does not delete "
+        "the browser's copy. Pause browser saving in the extension.",
+        "草稿保存在本地且未加密；这里删除不会删除浏览器中的副本。请在扩展里暂停网页保存。",
+    ),
+    (
+        "No drafts yet. Type on an allowed website to save a backup.",
+        "暂无草稿。在允许的网站输入文字后会自动保存。",
+    ),
+    (
+        "Could not start browser sync. Check whether port 47963 is in use.",
+        "无法开启浏览器同步，请检查 47963 端口是否被占用。",
+    ),
+    ("Could not save browser sync settings.", "无法保存浏览器同步设置。"),
+    (
+        "Pairing code copied. Paste it into the browser extension.",
+        "配对码已复制，请粘贴到浏览器扩展中。",
+    ),
+    ("Could not copy the pairing code. Please retry.", "无法复制配对码，请重试。"),
+    (
+        "Clear browser drafts? Browser-local copies will remain.",
+        "清空 ClipVault 中的浏览器草稿？浏览器里的副本仍会保留。",
+    ),
+    (
+        "Browser draft sync could not save. The extension keeps its local copy.",
+        "浏览器草稿同步保存失败，扩展仍保留本地副本。",
+    ),
     ("Statistics", "统计"),
     ("Emoji", "表情"),
     ("Image", "图片"),

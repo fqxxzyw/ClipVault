@@ -1,6 +1,6 @@
 import sqlite3
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 def migrate(connection: sqlite3.Connection) -> bool:
@@ -53,6 +53,22 @@ def migrate(connection: sqlite3.Connection) -> bool:
         if version < 4:
             # v4 records may carry additional code-language identifiers unknown to v3 apps.
             connection.execute("PRAGMA user_version = 4")
+        if version < 5:
+            connection.execute("""
+                CREATE TABLE browser_drafts (
+                    draft_id TEXT PRIMARY KEY,
+                    origin TEXT NOT NULL,
+                    page_path TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    revision INTEGER NOT NULL CHECK(revision > 0)
+                )
+            """)
+            connection.execute("PRAGMA user_version = 5")
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_browser_drafts_time ON browser_drafts(updated_at DESC)"
+        )
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_history_time ON "
             "clipboard_history(is_pinned DESC, updated_at DESC, id DESC)"

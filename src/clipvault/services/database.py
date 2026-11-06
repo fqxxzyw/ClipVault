@@ -57,6 +57,7 @@ class DatabaseWorker(QObject):
                 repo = self._open()
                 if name == "initialize":
                     cleanup_history(repo, self.settings)
+                    repo.cleanup_browser_drafts(self.settings.retention_days)
                     value = {"fts": repo.fts_available}
                 elif name == "capture":
                     text, timestamp = payload
@@ -158,6 +159,17 @@ class DatabaseWorker(QObject):
                         value = {"clip_id": clip.id, "reason": ""}
                 elif name == "search":
                     value = repo.search(payload)
+                elif name == "browser_draft_save":
+                    repo.save_browser_draft(payload, retention_days=self.settings.retention_days)
+                    value = None
+                elif name == "browser_draft_list":
+                    value = repo.browser_drafts(payload or "")
+                elif name == "browser_draft_get":
+                    value = repo.browser_draft(payload)
+                elif name == "browser_draft_delete":
+                    value = repo.delete_browser_draft(payload)
+                elif name == "browser_draft_clear":
+                    value = repo.clear_browser_drafts()
                 elif name in {"get", "preview"}:
                     clip = repo.get(payload)
                     if name == "get":
@@ -213,6 +225,7 @@ class DatabaseWorker(QObject):
                         value.append((clip, png))
                 elif name == "cleanup":
                     value = cleanup_history(repo, self.settings)
+                    repo.cleanup_browser_drafts(self.settings.retention_days)
                 elif name == "clear":
                     value = repo.clear_ordinary()
                 elif name == "format":
