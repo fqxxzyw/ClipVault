@@ -47,8 +47,9 @@ async function waitFor(check, what) {
   let context;
   try {
     const extension = path.resolve(__dirname, '../../browser-extension');
-    context = await chromium.launchPersistentContext(profile, {channel:'chromium', headless:false,
-      args:[`--disable-extensions-except=${extension}`, `--load-extension=${extension}`]});
+    context = await chromium.launchPersistentContext(profile, {
+      ...(process.env.CLIPVAULT_CHROMIUM ? {executablePath:process.env.CLIPVAULT_CHROMIUM} : {channel:'chromium'}),
+      headless:false, args:[`--disable-extensions-except=${extension}`, `--load-extension=${extension}`]});
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', {timeout:15000});
     const extensionId = new URL(worker.url()).host;
     const site = `http://127.0.0.1:${website.address().port}`;

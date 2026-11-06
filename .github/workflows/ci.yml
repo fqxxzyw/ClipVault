@@ -84,10 +84,10 @@ jobs:
       - name: Install Chromium test dependencies
         run: |
           npm install --no-save --prefix "$RUNNER_TEMP/cv-pw" playwright@1.62.1
-          "$RUNNER_TEMP/cv-pw/node_modules/.bin/playwright" install --with-deps chromium
-          sudo apt-get install -y xvfb
+          command -v chromium
+          command -v xvfb-run
       - name: Test the real unpacked extension
-        run: NODE_PATH="$RUNNER_TEMP/cv-pw/node_modules" xvfb-run -a node tests/browser_extension/e2e.cjs
+        run: CLIPVAULT_CHROMIUM="$(command -v chromium)" NODE_PATH="$RUNNER_TEMP/cv-pw/node_modules" xvfb-run -a node tests/browser_extension/e2e.cjs
   release-preview:
     if: "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.head_commit.message == 'release: v0.5.0-preview.1' }}"
     needs: [test, windows-build, browser-extension-test]
