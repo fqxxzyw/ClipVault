@@ -9,7 +9,7 @@ description = "A lightweight, offline-first clipboard manager for Windows"
 readme = "README_EN.md"
 requires-python = ">=3.11"
 license = "MIT"
-dependencies = ["PySide6>=6.8,<7", "Pygments>=2.18,<3"]
+dependencies = ["PySide6>=6.8,<6.12", "Pygments>=2.18,<3"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "pytest-qt>=4.4,<5", "ruff>=0.9,<1", "pyinstaller>=6.11,<7"]
