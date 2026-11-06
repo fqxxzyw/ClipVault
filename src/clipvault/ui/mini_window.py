@@ -136,6 +136,7 @@ class ContentDelegate(QStyledItemDelegate):
 
 class MiniWindow(QWidget):
     copy_requested = Signal(int)
+    manual_requested = Signal()
     batch_copy_requested = Signal(object)
     panel_hidden = Signal()
     markdown_copy_requested = Signal(int, str)
@@ -188,6 +189,8 @@ class MiniWindow(QWidget):
         self.grip.installEventFilter(self)
         row.addWidget(self.grip)
         row.addStretch()
+        self.new_clip = self._tool("add", "New clip", row)
+        self.new_clip.clicked.connect(self.manual_requested)
         self.pin_button = self._tool("pin", "Always on top", row)
         self.pin_button.setCheckable(True)
         self.pin_button.clicked.connect(
@@ -280,6 +283,7 @@ class MiniWindow(QWidget):
             tr("Drag to move · Drag edges to resize · Click to copy · Enter / Esc")
         )
         for button in (
+            self.new_clip,
             self.pin_button,
             self.options_button,
             self.full_button,

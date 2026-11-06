@@ -37,7 +37,9 @@ class Repository:
             self.connection.close()
             raise
 
-    def upsert(self, content: str, captured_at: str | None = None) -> Clip:
+    def upsert(
+        self, content: str, captured_at: str | None = None, *, favorite: bool = False
+    ) -> Clip:
         if not content.strip() or len(content) > MAX_TEXT_LENGTH:
             raise ValueError("Content is blank or exceeds the capture limit")
         digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -46,12 +48,13 @@ class Repository:
             self.connection.execute(
                 """
                 INSERT INTO clipboard_history
-                (content, content_hash, content_type, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                (content, content_hash, content_type, created_at, updated_at, is_favorite)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(content_hash) DO UPDATE SET
-                    updated_at = MAX(updated_at, excluded.updated_at)
+                    updated_at = MAX(updated_at, excluded.updated_at),
+                    is_favorite = MAX(is_favorite, excluded.is_favorite)
             """,
-                (content, digest, classify(content), timestamp, timestamp),
+                (content, digest, classify(content), timestamp, timestamp, int(favorite)),
             )
         row = self.connection.execute(
             "SELECT * FROM clipboard_history WHERE content_hash = ?", (digest,)

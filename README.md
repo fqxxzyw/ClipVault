@@ -10,7 +10,7 @@ Your Clipboard. Your Data. Your Control.
 - **快捷搜索，快速复用**：中文子串搜索、Code / TXT / MD 分类、日期筛选、收藏与置顶。
 - **轻量简洁，开箱即用**：中英文界面、深浅主题、内容小窗、代码高亮和本地 Markdown 预览。
 
-当前版本 [**0.4.0 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.0-preview.1)。真实 Windows 10/11 实机验收尚未完成。
+当前版本 [**0.4.1 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.1-preview.1)。真实 Windows 10/11 实机验收尚未完成。
 
 ## 真实运行截图
 
@@ -28,6 +28,7 @@ Your Clipboard. Your Data. Your Control.
 
 | 功能 | 使用方式 |
 | --- | --- |
+| 手动新建 | 主窗口点“新建内容”，或点小窗顶部的加号；输入后可保存或保存并复制。默认加入收藏以防自动清理，可取消；保存与剪贴板监听的暂停状态无关 |
 | 列表 / 宫格与批量复制 | 主窗口或小窗切换视图并进入多选；“全选已加载”只选择当前已加载的记录。文本按显示顺序以空行连接；图片和图文粘贴方式及兼容性见下方说明 |
 | 延迟排序 | 复制后当前面板内不立即置顶，所有主窗口和小窗收起后再更新排序；复用统计仍立即计入 |
 | 分类与搜索 | 顶部类型筛选选 Code（24 种代码/配置语言）、TXT、Markdown、URL、图片或文件；搜索多个关键词按 AND 匹配 |
@@ -74,9 +75,11 @@ py -3.11 -m venv .venv
 
 只运行软件可安装 `-e .`，无需开发依赖。默认数据位于 `%LOCALAPPDATA%\ClipVault\history.sqlite3` 与 `settings.json`，不在项目目录。图片也在 SQLite 中。设置里可打开数据目录；开发测试可用 `--data-dir` 指定隔离目录。Linux 数据目录为 `$XDG_DATA_HOME/ClipVault` 或 `~/.local/share/ClipVault`；全局快捷键和开机启动仅 Windows 提供。
 
-从 [0.4.0 Preview 1 Release](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.0-preview.1) 下载单文件 EXE，或下载完整 ZIP 并完整解压后运行 `ClipVault.exe`。Release 同时提供许可证和 `SHA256SUMS.txt`。不需要安装 Python。
+从 [0.4.1 Preview 1 Release](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.1-preview.1) 下载单文件 EXE，或下载完整 ZIP 并完整解压后运行 `ClipVault.exe`。Release 同时提供许可证和 `SHA256SUMS.txt`。不需要安装 Python。
 
 ## 限制与隐私
+
+手动新建的文字保存在未加密的本地数据库中，不受自动敏感过滤影响，勿保存密码或密钥。手动保存保留输入原文；复制时遵循“自动清理复制文本”设置。手动新建不会自动记录其他应用的输入。
 
 批量复制最多 100 条、图片总计 40 MiB。多图单独复制时提供独立 PNG 文件和富文本；图文混合时提供富文本和纯文本回退。目标软件必须支持相应格式，普通文本框不能显示图片。多图文件粘贴会在数据目录 `clipboard-cache` 保存临时 PNG 至少 7 天，并在下一次多图文件复制时清理过期批次；这些文件不会随历史记录删除而同步清除。
 

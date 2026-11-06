@@ -73,7 +73,7 @@ jobs:
           name: tests-windows
           path: test-results/
   release-preview:
-    if: "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.head_commit.message == 'release: v0.4.0-preview.1' }}"
+    if: "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.head_commit.message == 'release: v0.4.1-preview.1' }}"
     needs: [test, windows-build]
     runs-on: ubuntu-latest
     permissions:
@@ -94,19 +94,19 @@ jobs:
           set -euo pipefail
           test -f release/onedir/ClipVault.exe
           test -f release/onefile/ClipVault.exe
-          (cd release/onedir && zip -qr ../ClipVault-0.4.0-preview.1-windows-x64.zip .)
-          (cd release/onefile && zip -qr ../ClipVault-0.4.0-preview.1-licenses.zip LICENSE THIRD_PARTY_NOTICES.md licenses)
-          cp release/onefile/ClipVault.exe release/ClipVault-0.4.0-preview.1-windows-x64.exe
-          (cd release && sha256sum ClipVault-0.4.0-preview.1-windows-x64.zip ClipVault-0.4.0-preview.1-windows-x64.exe ClipVault-0.4.0-preview.1-licenses.zip > SHA256SUMS.txt)
+          (cd release/onedir && zip -qr ../ClipVault-0.4.1-preview.1-windows-x64.zip .)
+          (cd release/onefile && zip -qr ../ClipVault-0.4.1-preview.1-licenses.zip LICENSE THIRD_PARTY_NOTICES.md licenses)
+          cp release/onefile/ClipVault.exe release/ClipVault-0.4.1-preview.1-windows-x64.exe
+          (cd release && sha256sum ClipVault-0.4.1-preview.1-windows-x64.zip ClipVault-0.4.1-preview.1-windows-x64.exe ClipVault-0.4.1-preview.1-licenses.zip > SHA256SUMS.txt)
       - name: Publish preview release and Windows assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v0.4.0-preview.1 \
-            release/ClipVault-0.4.0-preview.1-windows-x64.exe \
-            release/ClipVault-0.4.0-preview.1-windows-x64.zip \
-            release/ClipVault-0.4.0-preview.1-licenses.zip \
+          gh release create v0.4.1-preview.1 \
+            release/ClipVault-0.4.1-preview.1-windows-x64.exe \
+            release/ClipVault-0.4.1-preview.1-windows-x64.zip \
+            release/ClipVault-0.4.1-preview.1-licenses.zip \
             release/SHA256SUMS.txt \
             --target "$GITHUB_SHA" --prerelease \
-            --title "ClipVault 0.4.0 Preview 1 — Windows 11 界面与批量复制" \
-            --notes-file docs/RELEASE_NOTES_0.4.0.md
+            --title "ClipVault 0.4.1 Preview 1 — 手动创建常用内容" \
+            --notes-file docs/RELEASE_NOTES_0.4.1.md

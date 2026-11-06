@@ -14,6 +14,7 @@ from clipvault.core.hotkeys import HotkeyError, HotkeyManager, parse_hotkey
 from clipvault.services.database import DatabaseService
 from clipvault.ui.i18n import tr, translate_widgets
 from clipvault.ui.main_window import MainWindow
+from clipvault.ui.manual_entry import ManualEntryDialog
 from clipvault.ui.mini_window import MiniWindow
 from clipvault.ui.styles import apply_theme
 from clipvault.utils.paths import resource_path
@@ -63,6 +64,9 @@ class ClipVaultApplication(QObject):
         self._emoji_text = ""
         self._pending_reuse: list[tuple[int, str]] = []
         self._batch_message = ""
+        self._manual_dialog: ManualEntryDialog | None = None
+        self._manual_job: int | None = None
+        self._manual_copy = False
         self._stopping = False
         self.tray: QSystemTrayIcon | None = None
         self.refresh_timer = QTimer(self)
@@ -98,12 +102,14 @@ class ClipVaultApplication(QObject):
         self.window.search_requested.connect(self._search)
         self.window.selected.connect(self._preview)
         self.window.copy_requested.connect(self._copy_id)
+        self.window.manual_requested.connect(self._show_manual_entry)
         self.window.batch_copy_requested.connect(self._copy_batch)
         self.window.panel_hidden.connect(self._schedule_reuse_flush)
         self.window.pause_requested.connect(self.toggle_pause)
         self.window.quit_requested.connect(self.quit)
         self.window.mini_requested.connect(self.show_mini)
         self.mini.copy_requested.connect(self._copy_id)
+        self.mini.manual_requested.connect(self._show_manual_entry)
         self.mini.batch_copy_requested.connect(self._copy_batch)
         self.mini.panel_hidden.connect(self._schedule_reuse_flush)
         self.mini.markdown_copy_requested.connect(self._copy_markdown)
@@ -278,6 +284,29 @@ class ClipVaultApplication(QObject):
         if clip_id is not None:
             self._actions[self.database.submit("get", clip_id)] = "copy"
 
+    def _show_manual_entry(self):
+        if self.mini.isVisible():
+            self._show_full()
+        if self._manual_dialog is not None:
+            self._manual_dialog.raise_()
+            self._manual_dialog.activateWindow()
+            return
+        dialog = ManualEntryDialog(self.window)
+        self._manual_dialog = dialog
+        dialog.save_requested.connect(self._save_manual)
+        dialog.finished.connect(self._manual_finished)
+        dialog.open()
+
+    def _manual_finished(self, _result):
+        dialog, self._manual_dialog = self._manual_dialog, None
+        if dialog is not None:
+            dialog.deleteLater()
+
+    def _save_manual(self, text, favorite, copy_after):
+        if self._manual_job is None:
+            self._manual_copy = copy_after
+            self._manual_job = self.database.submit("manual_save", (text, favorite))
+
     def _copy_batch(self, clip_ids):
         if clip_ids:
             self.database.submit("get_batch", list(clip_ids))
@@ -433,6 +462,18 @@ class ClipVaultApplication(QObject):
             clip_id, image = value
             if not image.isNull():
                 self.clipboard.copy_image(image, clip_id)
+        elif name == "manual_save" and job_id == self._manual_job:
+            copy_after = self._manual_copy
+            self._manual_job = None
+            if self._manual_dialog is not None:
+                self._manual_dialog.set_busy(False)
+                self._manual_dialog.accept()
+            self.window.notify(
+                tr("Saved to Favorites." if value["favorite"] else "Saved to history.")
+            )
+            self.refresh_timer.start()
+            if copy_after:
+                self._copy_id(value["clip_id"])
         elif name == "get_batch":
             try:
                 batch = prepare_batch(
@@ -489,6 +530,14 @@ class ClipVaultApplication(QObject):
 
     def _error(self, job_id, name, message):
         self._actions.pop(job_id, None)
+        if name == "manual_save" and job_id == self._manual_job:
+            self._manual_job = None
+            if self._manual_dialog is not None:
+                self._manual_dialog.set_busy(False)
+                self._manual_dialog.show_error(
+                    tr("Could not save. Your text is still here; check storage and try again.")
+                )
+                return
         if name == "search" and self._search_job and job_id == self._search_job[0]:
             self.window.search_busy = False
             self.window.load_more.setEnabled(True)

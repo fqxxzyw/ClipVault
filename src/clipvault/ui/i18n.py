@@ -325,6 +325,28 @@ PAIRS += [
 ]
 PAIRS += [("Offline. On your device.", "完全离线，数据在本地。"), ("TXT", "TXT · 文本")]
 PAIRS += [
+    ("New clip", "新建内容"),
+    ("Create a reusable clip", "创建一条常用内容"),
+    ("Write or paste text to save and reuse later.", "输入或粘贴内容，保存后可随时复制使用。"),
+    ("Enter text here…", "在这里输入内容…"),
+    ("Clip text", "内容文本"),
+    ("{count:,} / {limit:,} characters", "{count:,} / {limit:,} 字符"),
+    ("Add to Favorites and protect from automatic cleanup", "加入收藏，防止被自动清理"),
+    (
+        "Saved locally without encryption. Avoid storing passwords or secrets.",
+        "内容保存在本地且未加密，请避免保存密码等敏感信息。",
+    ),
+    ("Cancel", "取消"),
+    ("Save", "保存"),
+    ("Save and copy", "保存并复制"),
+    ("Text exceeds the 100,000 character limit.", "内容超过 100,000 字符的上限。"),
+    ("Text contains invalid characters.", "内容包含无效字符。"),
+    ("Saved to Favorites.", "已保存到收藏。"),
+    ("Saved to history.", "已保存到历史记录。"),
+    (
+        "Could not save. Your text is still here; check storage and try again.",
+        "保存失败，内容仍在这里；请检查存储空间后重试。",
+    ),
     ("List", "列表"),
     ("Grid", "宫格"),
     ("Select", "多选"),

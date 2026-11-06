@@ -10,7 +10,7 @@ A lightweight, privacy-first clipboard manager for Windows.
 - **Find and reuse:** Chinese substring search, Code / TXT / Markdown categories, dates, favorites and pins.
 - **Simple desktop workflow:** bilingual UI, dark/light themes, a content-only mini picker, highlighting and local Markdown preview.
 
-Current release: [**0.4.0 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.0-preview.1). Interactive Windows acceptance remains pending.
+Current release: [**0.4.1 Preview 1**](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.1-preview.1). Interactive Windows acceptance remains pending.
 
 ## Actual screenshots
 
@@ -29,6 +29,7 @@ Copy in another application. ClipVault captures clipboard change events and save
 
 | Feature | Behavior |
 | --- | --- |
+| Manual clips | Create a clip from the main or mini window and save or save-and-copy. Favorites are enabled by default to protect against cleanup; manual saves work while monitoring is paused |
 | List / grid and batch copy | Select multiple loaded items in either window; texts are joined in display order with blank lines. See image compatibility below |
 | Deferred ordering | Reused items retain their position until all panels are hidden; reuse statistics update immediately |
 | Search and categories | Literal multi-term AND search, Chinese substring fallback, Code group (Python/JS/JSON/Shell/SQL), TXT, Markdown, URLs, images and files |
@@ -75,9 +76,11 @@ py -3.11 -m venv .venv
 
 Runtime-only installation: `pip install -e .`. User data: `%LOCALAPPDATA%\ClipVault\history.sqlite3` and `settings.json`, outside the source tree; images are stored in SQLite too. Settings opens the data folder. `--data-dir` supports isolated profiles. Linux uses `$XDG_DATA_HOME/ClipVault` or `~/.local/share/ClipVault`; hotkeys/startup integration are Windows-only.
 
-Download the standalone EXE or complete Windows ZIP from the [0.4.0 Preview 1 release](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.0-preview.1). Extract the entire ZIP if using the folder edition. Licenses and SHA-256 checksums are included as release assets.
+Download the standalone EXE or complete Windows ZIP from the [0.4.1 Preview 1 release](https://github.com/fqxxzyw/ClipVault/releases/tag/v0.4.1-preview.1). Extract the entire ZIP if using the folder edition. Licenses and SHA-256 checksums are included as release assets.
 
 ## Privacy and limits
+
+Manually created text is stored in the unencrypted local database and is not subject to the automatic sensitive-content filter. Do not save passwords or secrets. Text is saved as entered; the existing text-cleanup setting applies when copying. Manual clips do not record typing from other applications.
 
 Batch copy supports up to 100 clips and 40 MiB of image data. Image-only batches provide separate PNG files and rich HTML; mixed batches provide HTML plus a plain-text fallback. Destination applications must support the format. For file pastes, temporary PNGs are retained in `clipboard-cache` for at least seven days and expired batches are removed on a subsequent multiple-image file copy; deleting history does not remove these cached files.
 

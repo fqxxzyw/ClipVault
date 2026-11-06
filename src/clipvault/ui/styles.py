@@ -1,6 +1,7 @@
 from PySide6.QtGui import QColor, QPalette
 
 from clipvault.core.languages import CODE_TYPES
+from clipvault.utils.paths import resource_path
 
 PALETTES = {
     "dark": {
@@ -51,6 +52,9 @@ TYPE_COLORS.update({kind: "#9ab8fa" for kind in CODE_TYPES if kind not in TYPE_C
 
 def apply_theme(application, theme: str, font_size: int):
     c = PALETTES[theme]
+    check_icon = resource_path(
+        "check-dark.svg" if theme == "dark" else "check-white.svg"
+    ).as_posix()
     palette = QPalette()
     for role, color in (
         (QPalette.ColorRole.Window, c["bg"]),
@@ -106,6 +110,7 @@ def apply_theme(application, theme: str, font_size: int):
         QPushButton#primary {{ background: {c["accent"]}; border: 0; color: {"#10141d" if theme == "dark" else "#ffffff"};
                                font-weight: 600; padding: 10px; }}
         QPushButton#primary:hover {{ background: {"#a6bbff" if theme == "dark" else "#355ac5"}; }}
+        QPushButton#primary:disabled {{ background: {c["border"]}; color: {c["muted"]}; }}
         QPushButton#danger {{ color: {c["danger"]}; }}
         QLineEdit, QComboBox, QSpinBox, QKeySequenceEdit {{ background: {c["input"]};
             border: 1px solid {c["border"]}; border-radius: 6px; padding: 8px; selection-background-color: {c["selected"]}; }}
@@ -115,6 +120,9 @@ def apply_theme(application, theme: str, font_size: int):
         QListView, QListWidget {{ background: transparent; border: 0; outline: 0; }}
         QWidget#preview {{ background: {c["panel"]}; border: 1px solid {c["border"]}; border-radius: 8px; }}
         QTextBrowser, QPlainTextEdit {{ background: {c["panel"]}; border: 0; padding: 4px; }}
+        QPlainTextEdit#manualEditor {{ border: 1px solid {c["border"]}; border-radius: 6px; padding: 10px; }}
+        QPlainTextEdit#manualEditor:focus {{ border-color: {c["accent"]}; }}
+        QLabel#manualError {{ color: {c["danger"]}; }}
         QSplitter::handle {{ background: transparent; width: 14px; }}
         QStatusBar {{ background: {c["bg"]}; border: 0;
                      color: {c["muted"]}; font-size: 11px; padding: 4px 14px; }}
@@ -132,7 +140,7 @@ def apply_theme(application, theme: str, font_size: int):
         QCheckBox {{ spacing: 9px; }}
         QCheckBox:focus {{ color: {c["accent"]}; }}
         QCheckBox::indicator {{ width: 16px; height: 16px; border-radius: 4px; border: 1px solid {c["muted"]}; }}
-        QCheckBox::indicator:checked {{ background: {c["accent"]}; border: 1px solid {c["accent"]}; }}
+        QCheckBox::indicator:checked {{ background: {c["accent"]}; border: 1px solid {c["accent"]}; image: url("{check_icon}"); }}
         QSlider::groove:horizontal {{ height: 4px; background: {c["border"]}; border-radius: 2px; }}
         QSlider::sub-page:horizontal {{ background: {c["accent"]}; border-radius: 2px; }}
         QSlider::handle:horizontal {{ background: {c["accent"]}; width: 14px; margin: -5px 0; border-radius: 10px; }}

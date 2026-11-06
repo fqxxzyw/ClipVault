@@ -83,6 +83,16 @@ class DatabaseWorker(QObject):
                         value = {"clip_id": clip.id, "reason": ""}
                     else:
                         value = {"clip_id": None, "reason": decision.reason}
+                elif name == "manual_save":
+                    text, favorite = payload
+                    if (
+                        type(favorite) is not bool
+                        or not validate_capture(text, filter_sensitive=False).allowed
+                    ):
+                        raise ValueError("Invalid manually created text")
+                    clip = repo.upsert(text, favorite=favorite)
+                    cleanup_history(repo, self.settings)
+                    value = {"clip_id": clip.id, "favorite": clip.is_favorite}
                 elif name == "capture_rich":
                     rich, timestamp = payload
                     if (
