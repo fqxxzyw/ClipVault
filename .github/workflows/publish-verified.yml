@@ -1,0 +1,65 @@
+name: Publish verified ClipVault preview
+on:
+  push:
+    branches: [release/publish-050-verified]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_SHA: 7ec5dc7a96bf8444003ddb3e9d4a481059b86f2d
+    steps:
+      - name: Verify main and the completed test jobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/git/ref/heads/main --jq .object.sha)" = "$TARGET_SHA"
+          gh api repos/$GITHUB_REPOSITORY/actions/runs/42192884757/jobs --paginate | jq -e '[.jobs[] | select(.name == "windows-build" or .name == "test (3.11)" or .name == "test (3.12)") | select(.status == "completed" and .conclusion == "success")] | length == 3' >/dev/null
+          gh api repos/$GITHUB_REPOSITORY/actions/runs/42193663041/jobs --paginate | jq -e '[.jobs[] | select(.name == "browser-extension-test" and .status == "completed" and .conclusion == "success")] | length == 1' >/dev/null
+          gh api repos/$GITHUB_REPOSITORY/compare/$TARGET_SHA...18b3cda05890ec5f1d635019a4edb81504db88b2 | jq -e '(.files | map(.filename) | sort) == [".github/workflows/ci.yml","tests/browser_extension/e2e.cjs"]' >/dev/null
+      - uses: actions/checkout@v4
+        with:
+          ref: 7ec5dc7a96bf8444003ddb3e9d4a481059b86f2d
+      - uses: actions/download-artifact@v4
+        with:
+          name: ClipVault-windows-x64-onedir
+          path: release/onedir
+          run-id: 42192884757
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: ClipVault-windows-x64-onefile
+          path: release/onefile
+          run-id: 42192884757
+          github-token: ${{ github.token }}
+      - name: Package the verified build and extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f release/onedir/ClipVault.exe
+          test -f release/onefile/ClipVault.exe
+          (cd release/onedir && zip -qr ../ClipVault-0.5.0-preview.1-windows-x64.zip .)
+          (cd release/onefile && zip -qr ../ClipVault-0.5.0-preview.1-licenses.zip LICENSE THIRD_PARTY_NOTICES.md licenses)
+          (cd browser-extension && zip -qr ../release/ClipVault-0.5.0-preview.1-browser-extension.zip .)
+          cp release/onefile/ClipVault.exe release/ClipVault-0.5.0-preview.1-windows-x64.exe
+          (cd release && sha256sum ClipVault-0.5.0-preview.1-windows-x64.zip ClipVault-0.5.0-preview.1-windows-x64.exe ClipVault-0.5.0-preview.1-licenses.zip ClipVault-0.5.0-preview.1-browser-extension.zip > SHA256SUMS.txt)
+      - name: Publish the requested preview release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v0.5.0-preview.1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; leave its assets untouched."
+            exit 0
+          fi
+          gh release create v0.5.0-preview.1 \
+            release/ClipVault-0.5.0-preview.1-windows-x64.exe \
+            release/ClipVault-0.5.0-preview.1-windows-x64.zip \
+            release/ClipVault-0.5.0-preview.1-licenses.zip \
+            release/ClipVault-0.5.0-preview.1-browser-extension.zip \
+            release/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$TARGET_SHA" --prerelease \
+            --title "ClipVault 0.5.0 Preview 1 — 浏览器草稿保护" \
+            --notes-file docs/RELEASE_NOTES_0.5.0.md
